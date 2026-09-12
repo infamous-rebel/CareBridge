@@ -4,6 +4,30 @@
 
 ---
 
+## What Is Real vs Simulated
+
+| Component | Status |
+|---|---|
+| Multi-agent orchestration (Supervisor + 4 specialists) | ✅ Real — live Strands agents |
+| LLM routing | ✅ Real — Groq `gpt-oss-120b` (provider-agnostic) |
+| Deterministic safety policy | ✅ Real — Python, testable, LLM cannot override |
+| Immutable audit trail | ✅ Real — SQLite triggers block UPDATE/DELETE |
+| Google sign-in (Firebase) | ✅ Real — production Firebase project |
+| FastAPI backend + JWT + RBAC | ✅ Real — deployed on Railway |
+| Next.js dashboard | ✅ Real — deployed on Vercel |
+| **Pharmacy API** | ⚠️ **Simulated** — commercial contract required |
+| **Delivery API** | ⚠️ **Simulated** — commercial contract required |
+| **Twilio SMS** | ⚠️ **Simulated** — trial credentials ready, 1-file swap |
+| **Google Calendar** | ⚠️ **Simulated** — OAuth ready, 1-file swap |
+
+**The differentiator is not the healthcare idea. It is this:**
+The LLM decides *who should act*. Deterministic Python decides *what the 
+system is allowed to do*. Every action is written to an immutable audit 
+trail before execution. The AI has authority to route. It does not have 
+authority to override safety.
+
+---
+
 ## Live Demo
 
 | Component | URL |
