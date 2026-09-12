@@ -890,19 +890,27 @@ async def query_status(care_recipient_id: str, question: str) -> str:
         f"Current state: {state_summary}"
     )
 
-    messages = [{"role": "user", "content": [{"text": user_prompt}]}]
-
     try:
+        from strands import Agent
+
         model = get_model()
-        response = model(messages, system_prompt=_QUERY_SYSTEM_PROMPT)
-        # Strands model responses expose .output.text; handle both shapes.
+        answer_agent = Agent(
+            model=model,
+            system_prompt=_QUERY_SYSTEM_PROMPT,
+        )
+        result = answer_agent(user_prompt)
+
+        # Extract text from the AgentResult
         answer: str
-        if isinstance(response, str):
-            answer = response
+        if hasattr(result, "message") and isinstance(result.message, str):
+            answer = result.message
+        elif hasattr(result, "output") and hasattr(result.output, "text"):
+            answer = result.output.text
+        elif hasattr(result, "output") and isinstance(result.output, str):
+            answer = result.output
         else:
-            answer = str(getattr(response, "output", response))
-            if hasattr(response, "output") and hasattr(response.output, "text"):
-                answer = response.output.text
+            answer = str(result)
+
         answer = answer.strip()
         if answer:
             logger.info(

@@ -90,7 +90,7 @@ _ENV_VARS: dict[str, str] = {
 # absent or blank so both configuration paths resolve identically.
 _DEFAULTS: dict[str, Any] = {
     "llm_provider": "gemini",
-    "gemini_model": "gemini-2.5-flash",
+    "gemini_model": "gemini-3.6-flash",
     "groq_model": "llama-3.3-70b-versatile",
     "bedrock_model_id": "anthropic.claude-sonnet-4-20250514-v1:0",
     "aws_region": "us-east-1",

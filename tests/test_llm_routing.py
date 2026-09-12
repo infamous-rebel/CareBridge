@@ -191,7 +191,7 @@ def test_supervisor_uses_llm_when_configured(monkeypatch: pytest.MonkeyPatch) ->
     )
     assert type(supervisor.model).__name__ == "GeminiModel"
     assert get_provider_name() == "gemini"
-    assert get_configured_model_id() == "gemini-2.5-flash"
+    assert get_configured_model_id() == "gemini-3.6-flash"
     assert get_routing_mode() == "llm"
 
     # --- (b) all four specialists are tools the model can choose from --------
