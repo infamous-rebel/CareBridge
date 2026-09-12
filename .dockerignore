@@ -1,0 +1,42 @@
+# Keep secrets, caches, local databases, and non-API assets out of the image.
+
+# VCS
+.git
+.gitignore
+
+# Python caches / build artifacts
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs
+.venv/
+venv/
+env/
+
+# Secrets & local config (never bake into the image)
+.env
+.env.*
+!.env.example
+
+# Local databases & logs (fresh ones are created at runtime)
+*.db
+*.sqlite
+*.sqlite3
+logs/
+
+# Node / frontend (the React dashboard is deployed separately)
+node_modules/
+src/ui/
+
+# Tests, docs, and tooling not needed at runtime
+tests/
+.qoder/
+Dockerfile
+docker-compose.yml
+.dockerignore
+*.md

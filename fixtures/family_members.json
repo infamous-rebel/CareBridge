@@ -1,0 +1,29 @@
+[
+  {
+    "family_id": "fam-001",
+    "name": "Emily Johnson",
+    "relationship": "daughter",
+    "phone": "+1-555-0101",
+    "email": "emily.johnson@email.com",
+    "notification_preference": "both",
+    "escalation_priority": 1
+  },
+  {
+    "family_id": "fam-001",
+    "name": "Robert Johnson",
+    "relationship": "son",
+    "phone": "+1-555-0102",
+    "email": "robert.johnson@email.com",
+    "notification_preference": "email",
+    "escalation_priority": 2
+  },
+  {
+    "family_id": "fam-001",
+    "name": "Margaret Johnson",
+    "relationship": "spouse",
+    "phone": "+1-555-0103",
+    "email": "margaret.johnson@email.com",
+    "notification_preference": "sms",
+    "escalation_priority": 3
+  }
+]

@@ -1,0 +1,6 @@
+- Each feature area is organized as a pytest class grouping related methods (e.g., `TestClassifyAction`, `TestProcessEventRouting`, `TestAuditTrail`).
+- Async agent workflows are tested with `async def` test methods that construct `CareEvent` objects and await `process_event` / `approve_pending_action`.
+- External side effects (UUID generation, HTTP calls, tool functions) are stubbed using `unittest.mock.patch` or `AsyncMock` rather than real integrations.
+- Assertions combine schema field checks on `ResolutionResult`/`RefillOrder` with audit-log queries via `get_audit_events` to verify immutability and completeness of the event trail.
+- Error paths are validated with `pytest.raises(ValueError|RuntimeError|sqlite3.IntegrityError, match=...)` to assert both exception types and message substrings.
+- Static test data is loaded from `fixtures/*.json` files and referenced by IDs (e.g., `med-001`, `cr-001`, `apt-001`) consistently across unit and integration tests.

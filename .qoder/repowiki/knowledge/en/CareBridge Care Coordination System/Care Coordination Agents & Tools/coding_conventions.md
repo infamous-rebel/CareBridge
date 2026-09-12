@@ -1,0 +1,6 @@
+- Each domain agent exposes a single async `handle_<domain>_event(CareEvent)` entry point that returns a structured dict containing `actions_taken`, `escalation_required`, and `escalation_level` fields consumed by the Supervisor.
+- All side-effecting tool functions implement an audit-first pattern: write a `pending` audit event before the external call, then write a follow-up event with outcome `success` or `failure` using the same correlation id.
+- External API calls are wrapped in `with_retry(fn, *args, **kwargs)` from `tools/retry.py` rather than custom retry loops, and failures surface as `RetryExhausted` exceptions caught by the caller.
+- Escalation severity is computed deterministically via `classify_action()` and the shared `_LEVEL_RANK` table, never delegated to an LLM decision.
+- Agents communicate with each other exclusively through `CareEvent` objects dispatched by the Supervisor's routing tables (`_AGENT_EVENT_TYPES`, `_APPROVAL_AGENT_ROUTES`), not by direct cross-agent imports.
+- Domain tools read their data from JSON fixtures under `fixtures/` via a local `_load_*` helper, raising `ValueError` when a requested entity is missing.

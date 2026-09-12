@@ -1,0 +1,33 @@
+# CareBridge API — single-service compose stack.
+#
+# Usage:
+#   cp .env.example .env   # then edit secrets
+#   docker compose up --build
+#
+# The API is exposed on http://localhost:8000 (docs at /docs).
+
+services:
+  api:
+    build:
+      context: .
+      args:
+        BUILD_GIT_SHA: ${BUILD_GIT_SHA:-dev}
+        BUILD_TIMESTAMP: ${BUILD_TIMESTAMP:-}
+    image: carebridge-api
+    container_name: carebridge-api
+    ports:
+      - "8000:8000"
+    # .env is optional so the stack still boots in DEMO_MODE without it.
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DEMO_MODE: ${DEMO_MODE:-true}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped

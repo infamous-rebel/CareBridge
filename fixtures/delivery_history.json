@@ -1,0 +1,32 @@
+[
+  {
+    "delivery_id": "del-001",
+    "order_id": "ord-001",
+    "status": "delivered",
+    "expected_at": "2026-09-10T14:00:00Z",
+    "failure_reason": null,
+    "items": ["Lisinopril 10mg"],
+    "delivery_type": "pharmacy",
+    "care_recipient_id": "cr-001"
+  },
+  {
+    "delivery_id": "del-002",
+    "order_id": "ord-002",
+    "status": "in_transit",
+    "expected_at": "2026-09-12T16:00:00Z",
+    "failure_reason": null,
+    "items": ["Weekly grocery order"],
+    "delivery_type": "grocery",
+    "care_recipient_id": "cr-001"
+  },
+  {
+    "delivery_id": "del-003",
+    "order_id": "ord-003",
+    "status": "failed",
+    "expected_at": "2026-09-09T12:00:00Z",
+    "failure_reason": "Address not accessible",
+    "items": ["Metformin 500mg"],
+    "delivery_type": "pharmacy",
+    "care_recipient_id": "cr-001"
+  }
+]

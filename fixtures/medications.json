@@ -1,0 +1,32 @@
+[
+  {
+    "medication_id": "med-001",
+    "name": "Lisinopril",
+    "dosage": "10mg",
+    "frequency": "once daily",
+    "refill_threshold": 5,
+    "pharmacy_id": "pharm-001",
+    "care_recipient_id": "cr-001",
+    "days_remaining": 3
+  },
+  {
+    "medication_id": "med-002",
+    "name": "Metformin",
+    "dosage": "500mg",
+    "frequency": "twice daily",
+    "refill_threshold": 5,
+    "pharmacy_id": "pharm-001",
+    "care_recipient_id": "cr-001",
+    "days_remaining": 15
+  },
+  {
+    "medication_id": "med-003",
+    "name": "Atorvastatin",
+    "dosage": "20mg",
+    "frequency": "once daily",
+    "refill_threshold": 5,
+    "pharmacy_id": "pharm-002",
+    "care_recipient_id": "cr-001",
+    "days_remaining": 8
+  }
+]

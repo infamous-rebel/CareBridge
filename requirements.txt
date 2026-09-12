@@ -1,0 +1,35 @@
+strands-agents>=1.55
+strands-agents-builder>=0.1.0
+qoder-agent-sdk>=1.0.0
+pydantic>=2.0.0
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+boto3>=1.35
+python-dotenv>=1.0.0
+
+# --- LLM provider adapters (provider-agnostic; only the configured one is
+# imported at runtime — see src/runtime/model_factory.py) ---
+strands-agents-tools>=0.1
+google-genai>=0.8                  # GeminiModel
+anthropic>=0.40                    # AnthropicModel (strands adapter imports it)
+openai>=1.54                       # OpenAIModel (also serves Groq / OpenRouter)
+ollama>=0.3                        # OllamaModel (local inference)
+litellm>=1.50                      # LiteLLMModel (universal fallback)
+
+# --- REST API backend (FastAPI) ---
+fastapi>=0.115
+uvicorn[standard]>=0.32
+pydantic-settings>=2.6
+python-jose[cryptography]>=3.3
+python-multipart>=0.0.12
+slowapi>=0.1.9
+python-json-logger>=2.0
+httpx>=0.27
+# NOTE: the spec suggested passlib[bcrypt], but passlib 1.7.4 is broken against
+# bcrypt>=4.1 on Python 3.14 (it probes bcrypt.__about__ then mis-enforces the
+# 72-byte limit, raising on valid input). We call bcrypt directly, which meets
+# the same guardrails (cost>=12, constant-time compare). See src/api/security.py.
+bcrypt>=4.0
+
+# --- Firebase Authentication (hybrid identity; FastAPI issues business-claim tokens) ---
+firebase-admin>=6.5

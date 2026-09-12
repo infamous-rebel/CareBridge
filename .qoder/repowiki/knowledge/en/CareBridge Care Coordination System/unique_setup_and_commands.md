@@ -1,0 +1,1 @@
+`python main.py` boots the full system: initializes the audit DB, loads required fixture files, attempts to start the Strands Supervisor Agent (falling back to deterministic direct routing if unavailable), executes the Day 1 demo scenario, and prints an audit summary. Tests are discovered automatically under `tests/` via `pytest` using asyncio auto mode.

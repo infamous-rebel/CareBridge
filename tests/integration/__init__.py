@@ -1,0 +1,1 @@
+# CareBridge integration tests package.

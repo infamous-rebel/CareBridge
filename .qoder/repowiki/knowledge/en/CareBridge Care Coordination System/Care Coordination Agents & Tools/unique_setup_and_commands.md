@@ -1,0 +1,1 @@
+The Strands agent path requires the `strands` package and Bedrock credentials; when absent, `create_supervisor_agent` returns `None` and callers must use the deterministic `process_event` / `approve_pending_action` functions directly. Fixture data under `fixtures/` (e.g. `appointments.json`) must be present for tool functions like `get_calendar` and `send_prep_checklist`.

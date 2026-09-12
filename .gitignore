@@ -1,0 +1,46 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# --- Secrets & environment ---
+.env
+.env.local
+.env.*.local
+
+# --- CareBridge runtime artifacts ---
+audit.db
+audit.db-journal
+audit.db-wal
+audit.db-shm
+auth.db
+auth.db-journal
+auth.db-wal
+auth.db-shm
+logs/*
+!logs/.gitkeep
+*.log
+
+# --- Node (UI tooling) ---
+node_modules/
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Firebase service account — never commit
+secrets/

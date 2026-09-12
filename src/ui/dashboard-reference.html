@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareBridge — Caregiver Dashboard</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Fraunces (Serif) & Inter (Sans) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind Customization -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cream: '#FAF8F3',
+                        sidebarBg: '#F7F4EE',
+                        forest: '#1F4E3D',
+                        forestHover: '#173c2f',
+                        mint: '#A8D5BA',
+                        mintLight: '#E8F3EC',
+                        sand: '#E8DCC4',
+                        charcoal: '#2D312E',
+                        muted: '#686D6A'
+                    },
+                    fontFamily: {
+                        serif: ['Fraunces', 'serif'],
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FAF8F3;
+            color: #2D312E;
+        }
+        .font-serif {
+            font-family: 'Fraunces', serif;
+        }
+        /* Pulse animation for system status */
+        @keyframes statusPulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(168, 213, 186, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(168, 213, 186, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(168, 213, 186, 0); }
+        }
+        .status-pulse {
+            animation: statusPulse 2s infinite;
+        }
+        /* Custom scrollbar for clean editorial look */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FAF8F3;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #E8DCC4;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-cream text-charcoal antialiased flex h-screen overflow-hidden">
+
+    <!-- Left Sidebar (240px) -->
+    <aside class="w-[240px] bg-sidebarBg border-r border-sand flex flex-col justify-between shrink-0 select-none">
+        <div>
+            <!-- Logo area -->
+            <div class="h-20 px-6 flex items-center space-x-3 border-b border-sand">
+                <div class="w-8 h-8 rounded-full bg-forest flex items-center justify-center text-cream font-serif font-bold text-sm shadow-2xs">
+                    CB
+                </div>
+                <span class="font-serif text-xl font-semibold text-forest tracking-tight">CareBridge</span>
+            </div>
+
+            <!-- Navigation Items -->
+            <nav class="p-4 space-y-1 text-sm font-medium">
+                <a href="#overview" onclick="switchNav('overview')" id="nav-overview" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl bg-mintLight text-forest transition-colors">
+                    <i class="fa-solid fa-house w-5 text-center"></i>
+                    <span>Overview</span>
+                </a>
+                <a href="#medications" onclick="switchNav('medications')" id="nav-medications" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-muted hover:text-forest hover:bg-sand/40 transition-colors">
+                    <i class="fa-solid fa-pills w-5 text-center"></i>
+                    <span>Medications</span>
+                </a>
+                <a href="#appointments" onclick="switchNav('appointments')" id="nav-appointments" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-muted hover:text-forest hover:bg-sand/40 transition-colors">
+                    <i class="fa-solid fa-calendar-check w-5 text-center"></i>
+                    <span>Appointments</span>
+                </a>
+                <a href="#deliveries" onclick="switchNav('deliveries')" id="nav-deliveries" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-muted hover:text-forest hover:bg-sand/40 transition-colors">
+                    <i class="fa-solid fa-box-open w-5 text-center"></i>
+                    <span>Deliveries</span>
+                </a>
+                <a href="#alerts" onclick="switchNav('alerts')" id="nav-alerts" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-muted hover:text-forest hover:bg-sand/40 transition-colors">
+                    <i class="fa-solid fa-bell w-5 text-center"></i>
+                    <span>Alerts</span>
+                </a>
+                <a href="#approvals" onclick="switchNav('approvals')" id="nav-approvals" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-muted hover:text-forest hover:bg-sand/40 transition-colors">
+                    <i class="fa-solid fa-circle-check w-5 text-center"></i>
+                    <span>Approvals</span>
+                    <span id="approval-badge" class="ml-auto bg-forest text-cream text-[10px] px-1.5 py-0.5 rounded-full font-semibold">1</span>
+                </a>
+                <a href="#audit" onclick="switchNav('audit')" id="nav-audit" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-muted hover:text-forest hover:bg-sand/40 transition-colors">
+                    <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i>
+                    <span>Audit Trail</span>
+                </a>
+                <a href="#settings" onclick="switchNav('settings')" id="nav-settings" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-muted hover:text-forest hover:bg-sand/40 transition-colors">
+                    <i class="fa-solid fa-gear w-5 text-center"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Sidebar Footer / Profile summary -->
+        <div class="p-4 border-t border-sand">
+            <div class="flex items-center space-x-3 px-2 py-2">
+                <div class="w-9 h-9 rounded-full bg-sand flex items-center justify-center font-serif text-forest font-bold text-sm">
+                    DS
+                </div>
+                <div class="overflow-hidden">
+                    <div class="text-xs font-semibold text-charcoal truncate">Daniel Smith</div>
+                    <div class="text-[11px] text-muted truncate">Primary Caregiver</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden bg-cream">
+        
+        <!-- Top Bar -->
+        <header class="h-20 px-8 bg-cream border-b border-sand flex items-center justify-between shrink-0">
+            <div>
+                <h1 class="font-serif text-2xl sm:text-3xl font-normal text-forest">
+                    Good morning, Daniel Smith
+                </h1>
+            </div>
+
+            <div class="flex items-center space-x-6">
+                <!-- System Status Indicator -->
+                <div class="flex items-center space-x-2.5 bg-white border border-sand px-3.5 py-1.5 rounded-full text-xs font-medium text-charcoal shadow-2xs">
+                    <span class="w-2.5 h-2.5 rounded-full bg-mint status-pulse inline-block"></span>
+                    <span>All systems nominal</span>
+                </div>
+
+                <!-- Sign out action -->
+                <button onclick="triggerSignOut()" class="text-xs font-medium text-muted hover:text-forest transition-colors flex items-center space-x-1.5">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span>Sign Out</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Scrollable Dashboard Content -->
+        <main class="flex-1 overflow-y-auto p-8 space-y-6 pb-28">
+            
+            <!-- Care Recipient Card -->
+            <section class="bg-white border border-sand rounded-2xl p-6 sm:p-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                <div class="flex items-start sm:items-center space-x-5">
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-mintLight text-forest font-serif text-3xl font-bold flex items-center justify-center shrink-0 border border-mint/40">
+                        E
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex items-center space-x-3">
+                            <h2 class="font-serif text-2xl sm:text-[28px] font-normal text-forest">Evelyn Smith</h2>
+                            <span class="bg-mintLight text-forest text-xs font-medium px-3 py-1 rounded-full border border-mint/30 flex items-center space-x-1.5">
+                                <i class="fa-solid fa-shield-halved text-[10px]"></i>
+                                <span>Health Synced</span>
+                            </span>
+                        </div>
+                        <p class="text-sm text-muted">
+                            Age 78 &middot; 124 Oakridge Lane
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Right Side Metrics (Serif Numbers) -->
+                <div class="flex flex-wrap sm:flex-nowrap items-center gap-4 w-full lg:w-auto pt-4 lg:pt-0 border-t lg:border-t-0 border-sand">
+                    <!-- Medications Metric -->
+                    <div class="bg-cream border border-sand rounded-xl p-4 flex-1 sm:w-56">
+                        <div class="text-xs text-muted uppercase tracking-wider font-semibold mb-1">Current Medications</div>
+                        <div class="flex items-baseline space-x-2">
+                            <span class="font-serif text-3xl font-normal text-forest">3</span>
+                            <span class="text-xs text-muted">active prescriptions</span>
+                        </div>
+                    </div>
+
+                    <!-- Next Appointment Metric -->
+                    <div class="bg-cream border border-sand rounded-xl p-4 flex-1 sm:w-64">
+                        <div class="text-xs text-muted uppercase tracking-wider font-semibold mb-1">Next Appointment</div>
+                        <div class="font-serif text-lg font-normal text-forest truncate">Cardiology</div>
+                        <div class="text-xs text-muted mt-0.5 font-medium">Mon &middot; <span class="font-serif text-forest text-sm font-semibold">4:00 PM</span></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Grid Layout for Content & Actions -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Recent Activity Feed (8 Cols) -->
+                <div class="lg:col-span-8 bg-white border border-sand rounded-2xl p-6 sm:p-8 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between pb-6 border-b border-sand mb-6">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 rounded-lg bg-mintLight text-forest flex items-center justify-center text-sm">
+                                    <i class="fa-solid fa-bolt"></i>
+                                </div>
+                                <h3 class="font-serif text-xl font-normal text-forest">Recent Activity Feed</h3>
+                            </div>
+                            <span class="text-xs text-muted font-medium">Live Supervisor Log</span>
+                        </div>
+
+                        <!-- Activity Rows -->
+                        <div class="space-y-4">
+                            <!-- Row 1 -->
+                            <div class="flex items-start space-x-4 pb-4 border-b border-sand last:border-0 last:pb-0">
+                                <div class="w-10 h-10 rounded-xl bg-mintLight text-forest flex items-center justify-center shrink-0 mt-0.5">
+                                    <i class="fa-solid fa-pills text-sm"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between">
+                                        <h4 class="text-sm font-semibold text-charcoal">Medication Verified</h4>
+                                        <span class="text-xs text-muted font-mono">14m ago</span>
+                                    </div>
+                                    <p class="text-xs text-muted mt-0.5 truncate">Morning Lisinopril 10mg taken on schedule by Evelyn.</p>
+                                </div>
+                            </div>
+
+                            <!-- Row 2 -->
+                            <div class="flex items-start space-x-4 pb-4 border-b border-sand last:border-0 last:pb-0">
+                                <div class="w-10 h-10 rounded-xl bg-mintLight text-forest flex items-center justify-center shrink-0 mt-0.5">
+                                    <i class="fa-solid fa-box-archive text-sm"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between">
+                                        <h4 class="text-sm font-semibold text-charcoal">Refill Order Dispatched</h4>
+                                        <span class="text-xs text-muted font-mono">2h ago</span>
+                                    </div>
+                                    <p class="text-xs text-muted mt-0.5 truncate">CVS Pharmacy #4192 confirmed prescription refill for Thursday delivery.</p>
+                                </div>
+                            </div>
+
+                            <!-- Row 3 -->
+                            <div class="flex items-start space-x-4 pb-4 border-b border-sand last:border-0 last:pb-0">
+                                <div class="w-10 h-10 rounded-xl bg-mintLight text-forest flex items-center justify-center shrink-0 mt-0.5">
+                                    <i class="fa-solid fa-stethoscope text-sm"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between">
+                                        <h4 class="text-sm font-semibold text-charcoal">Appointment Synced</h4>
+                                        <span class="text-xs text-muted font-mono">Yesterday</span>
+                                    </div>
+                                    <p class="text-xs text-muted mt-0.5 truncate">Dr. Vance cardiology follow-up confirmed for Monday @ 4:00 PM.</p>
+                                </div>
+                            </div>
+
+                            <!-- Row 4 -->
+                            <div class="flex items-start space-x-4 pb-4 border-b border-sand last:border-0 last:pb-0">
+                                <div class="w-10 h-10 rounded-xl bg-mintLight text-forest flex items-center justify-center shrink-0 mt-0.5">
+                                    <i class="fa-solid fa-heart-pulse text-sm"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between">
+                                        <h4 class="text-sm font-semibold text-charcoal">Vitals Check Normal</h4>
+                                        <span class="text-xs text-muted font-mono">Yesterday</span>
+                                    </div>
+                                    <p class="text-xs text-muted mt-0.5 truncate">Blood pressure recorded at 122/80 mmHg. Within target parameters.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column (4 Cols): Needs Approval & Family Actions -->
+                <div class="lg:col-span-4 space-y-6">
+                    
+                    <!-- Needs Approval Card -->
+                    <div id="approval-card" class="bg-white border border-sand rounded-2xl p-6 sm:p-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+                                <h3 class="font-serif text-lg font-normal text-forest">Needs Approval</h3>
+                            </div>
+                            <span class="text-[11px] bg-sand/60 text-charcoal px-2.5 py-0.5 rounded-full font-semibold">1 Pending</span>
+                        </div>
+
+                        <div id="approval-content" class="bg-cream border border-sand rounded-xl p-4 space-y-3 mb-5">
+                            <div class="text-xs font-bold text-forest uppercase tracking-wider">Prescription Refill</div>
+                            <p class="text-sm text-charcoal font-medium">
+                                Aspirin refill request from Pharmacy (CVS #4192) &middot; $14.50 copay
+                            </p>
+                            <div class="text-[11px] text-muted">Supervisor agent verified dosage history. Ready for approval.</div>
+                        </div>
+
+                        <div id="approval-actions" class="flex items-center space-x-3">
+                            <button onclick="handleApproval('approved')" class="flex-1 bg-forest text-cream font-medium py-2.5 px-4 rounded-xl hover:bg-forestHover transition-all text-xs flex items-center justify-center space-x-1.5 shadow-2xs">
+                                <i class="fa-solid fa-check"></i>
+                                <span>Approve</span>
+                            </button>
+                            <button onclick="handleApproval('rejected')" class="flex-1 bg-transparent border border-sand text-charcoal font-medium py-2.5 px-4 rounded-xl hover:bg-sand/30 transition-all text-xs flex items-center justify-center space-x-1.5">
+                                <i class="fa-solid fa-xmark"></i>
+                                <span>Reject</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Family Actions 2x2 Grid -->
+                    <div class="bg-white border border-sand rounded-2xl p-6 sm:p-8">
+                        <h3 class="font-serif text-lg font-normal text-forest mb-4">Family Actions</h3>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="openActionModal('Video Call')" class="bg-cream border border-sand rounded-xl p-4 text-center hover:border-forest transition-all flex flex-col items-center justify-center space-y-2 group">
+                                <div class="w-10 h-10 rounded-xl bg-mintLight text-forest flex items-center justify-center group-hover:scale-105 transition-transform">
+                                    <i class="fa-solid fa-video text-sm"></i>
+                                </div>
+                                <span class="text-xs font-semibold text-charcoal">Video Call</span>
+                            </button>
+
+                            <button onclick="openActionModal('Order Meds')" class="bg-cream border border-sand rounded-xl p-4 text-center hover:border-forest transition-all flex flex-col items-center justify-center space-y-2 group">
+                                <div class="w-10 h-10 rounded-xl bg-mintLight text-forest flex items-center justify-center group-hover:scale-105 transition-transform">
+                                    <i class="fa-solid fa-pills text-sm"></i>
+                                </div>
+                                <span class="text-xs font-semibold text-charcoal">Order Meds</span>
+                            </button>
+
+                            <button onclick="openActionModal('Book Visit')" class="bg-cream border border-sand rounded-xl p-4 text-center hover:border-forest transition-all flex flex-col items-center justify-center space-y-2 group">
+                                <div class="w-10 h-10 rounded-xl bg-mintLight text-forest flex items-center justify-center group-hover:scale-105 transition-transform">
+                                    <i class="fa-solid fa-calendar-plus text-sm"></i>
+                                </div>
+                                <span class="text-xs font-semibold text-charcoal">Book Visit</span>
+                            </button>
+
+                            <button onclick="openActionModal('Share Records')" class="bg-cream border border-sand rounded-xl p-4 text-center hover:border-forest transition-all flex flex-col items-center justify-center space-y-2 group">
+                                <div class="w-10 h-10 rounded-xl bg-mintLight text-forest flex items-center justify-center group-hover:scale-105 transition-transform">
+                                    <i class="fa-solid fa-share-nodes text-sm"></i>
+                                </div>
+                                <span class="text-xs font-semibold text-charcoal">Share Records</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Bottom Fixed Input Bar -->
+        <div class="absolute bottom-0 left-[240px] right-0 bg-cream/90 backdrop-blur-md border-t border-sand p-4 px-8 z-30">
+            <div class="max-w-4xl mx-auto">
+                <form onsubmit="handleChatSubmit(event)" class="relative flex items-center">
+                    <input type="text" id="chat-input" placeholder="Ask about Mom..." class="w-full bg-white border border-sand rounded-full py-3.5 pl-5 pr-24 text-sm text-charcoal placeholder-muted focus:outline-none focus:border-forest shadow-sm">
+                    
+                    <div class="absolute right-2.5 flex items-center space-x-1.5">
+                        <!-- Microphone button -->
+                        <button type="button" onclick="toggleMicrophone()" id="mic-btn" class="w-9 h-9 rounded-full bg-sand/60 text-charcoal hover:bg-forest hover:text-cream transition-colors flex items-center justify-center text-xs" title="Voice Input">
+                            <i class="fa-solid fa-microphone"></i>
+                        </button>
+                        <!-- Send arrow button -->
+                        <button type="submit" class="w-9 h-9 rounded-full bg-forest text-cream hover:bg-forestHover transition-colors flex items-center justify-center text-xs shadow-2xs" title="Send">
+                            <i class="fa-solid fa-arrow-up"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Notification / Action Modal (Hidden by default) -->
+    <div id="action-modal" class="fixed inset-0 bg-charcoal/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white border border-sand rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4 animate-in fade-in zoom-in duration-200">
+            <div class="flex items-center justify-between pb-3 border-b border-sand">
+                <h3 id="modal-title" class="font-serif text-lg font-normal text-forest">Action Initiated</h3>
+                <button onclick="closeActionModal()" class="text-muted hover:text-forest text-sm">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p id="modal-message" class="text-sm text-charcoal leading-relaxed">
+                Processing your request through the CareBridge supervisor network...
+            </p>
+            <div class="pt-2 flex justify-end">
+                <button onclick="closeActionModal()" class="bg-forest text-cream text-xs px-5 py-2.5 rounded-xl font-medium hover:bg-forestHover transition-all">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive JavaScript -->
+    <script>
+        // Navigation switching logic
+        function switchNav(navId) {
+            // Reset active states
+            const navItems = ['overview', 'medications', 'appointments', 'deliveries', 'alerts', 'approvals', 'audit', 'settings'];
+            navItems.forEach(id => {
+                const el = document.getElementById('nav-' + id);
+                if(el) {
+                    el.className = 'flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-muted hover:text-forest hover:bg-sand/40 transition-colors';
+                }
+            });
+
+            // Activate current
+            const activeEl = document.getElementById('nav-' + navId);
+            if(activeEl) {
+                activeEl.className = 'flex items-center space-x-3 px-3.5 py-2.5 rounded-xl bg-mintLight text-forest transition-colors';
+            }
+        }
+
+        // Approval workflow handler
+        function handleApproval(status) {
+            const approvalCard = document.getElementById('approval-card');
+            if(status === 'approved') {
+                approvalCard.innerHTML = `
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+                            <h3 class="font-serif text-lg font-normal text-forest">Approval Complete</h3>
+                        </div>
+                        <span class="text-[11px] bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-semibold">Approved</span>
+                    </div>
+                    <div class="bg-cream border border-sand rounded-xl p-4 text-xs text-charcoal space-y-1">
+                        <div class="font-semibold text-forest">Aspirin Refill Request</div>
+                        <div>Successfully signed and transmitted to CVS #4192. Confirmation ID: #CB-8842</div>
+                    </div>
+                `;
+                // Update badge in sidebar
+                document.getElementById('approval-badge').style.display = 'none';
+            } else {
+                approvalCard.innerHTML = `
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
+                            <h3 class="font-serif text-lg font-normal text-forest">Request Rejected</h3>
+                        </div>
+                        <span class="text-[11px] bg-rose-100 text-rose-800 px-2.5 py-0.5 rounded-full font-semibold">Rejected</span>
+                    </div>
+                    <div class="bg-cream border border-sand rounded-xl p-4 text-xs text-charcoal">
+                        Refill request has been declined. Supervisor agent logged reason and notified care team.
+                    </div>
+                `;
+                document.getElementById('approval-badge').style.display = 'none';
+            }
+        }
+
+        // Action Modal logic
+        function openActionModal(actionName) {
+            document.getElementById('modal-title').innerText = actionName + ' — CareBridge Agent';
+            document.getElementById('modal-message').innerText = 'The autonomous supervisor agent is securely initiating ' + actionName.toLowerCase() + ' for Evelyn Smith. You will receive an encrypted status update within 60 seconds.';
+            document.getElementById('action-modal').classList.remove('hidden');
+        }
+
+        function closeActionModal() {
+            document.getElementById('action-modal').classList.add('hidden');
+        }
+
+        // Chat submit handler
+        function handleChatSubmit(event) {
+            event.preventDefault();
+            const inputVal = document.getElementById('chat-input').value;
+            if(inputVal.trim() !== '') {
+                openActionModal('Query: "' + inputVal + '"');
+                document.getElementById('chat-input').value = '';
+            }
+        }
+
+        // Microphone toggle simulation
+        let micActive = false;
+        function toggleMicrophone() {
+            micActive = !micActive;
+            const micBtn = document.getElementById('mic-btn');
+            if(micActive) {
+                micBtn.className = 'w-9 h-9 rounded-full bg-forest text-cream transition-colors flex items-center justify-center text-xs shadow-2xs';
+                micBtn.title = 'Listening... Click to stop';
+            } else {
+                micBtn.className = 'w-9 h-9 rounded-full bg-sand/60 text-charcoal hover:bg-forest hover:text-cream transition-colors flex items-center justify-center text-xs';
+                micBtn.title = 'Voice Input';
+            }
+        }
+
+        // Sign out trigger
+        function triggerSignOut() {
+            openActionModal('Sign Out');
+            document.getElementById('modal-message').innerText = 'You have successfully signed out of CareBridge secure healthcare infrastructure.';
+        }
+    </script>
+
+</body>
+</html>

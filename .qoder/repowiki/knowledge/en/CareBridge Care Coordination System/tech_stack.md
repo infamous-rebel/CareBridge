@@ -1,0 +1,1 @@
+Python with Strands Agents SDK for the agents-as-tools pattern, Pydantic v2 for shared data schemas, pytest + pytest-asyncio for testing, and SQLite for the in-process immutable audit trail; MCP servers (pharmacy, messaging, delivery) run in-process while calendar uses SSE.

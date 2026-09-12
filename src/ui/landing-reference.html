@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CareBridge — An AI coordinator for aging parents</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Fraunces (Serif) & Inter (Sans) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind Customization -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cream: '#FAF8F3',
+                        offwhite: '#F3EFE6',
+                        forest: '#1F4E3D',
+                        forestHover: '#173c2f',
+                        mint: '#A8D5BA',
+                        mintLight: '#e4f2ea',
+                        sand: '#E8DCC4',
+                        sandLight: '#f5f0e6',
+                        charcoal: '#2D312E',
+                        muted: '#686D6A'
+                    },
+                    fontFamily: {
+                        serif: ['Fraunces', 'serif'],
+                        sans: ['Inter', 'sans-serif']
+                    },
+                    maxWidth: {
+                        '1440': '1440px'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FAF8F3;
+            color: #2D312E;
+            overflow-x: hidden;
+        }
+        .font-serif {
+            font-family: 'Fraunces', serif;
+        }
+        /* Custom smooth pulse animation for mint indicator */
+        @keyframes mintPulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(168, 213, 186, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(168, 213, 186, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(168, 213, 186, 0); }
+        }
+        .mint-pulse {
+            animation: mintPulse 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-cream text-charcoal antialiased selection:bg-mint selection:text-forest">
+
+    <!-- Header / Nav -->
+    <header class="w-full border-b border-[#E8DCC4] bg-cream/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-[1440px] mx-auto px-6 sm:px-12 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-forest flex items-center justify-center text-cream font-serif text-xl font-bold shadow-sm">
+                    CB
+                </div>
+                <span class="font-serif text-2xl font-semibold tracking-tight text-forest">CareBridge</span>
+            </div>
+            
+            <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-muted">
+                <a href="#problem" class="hover:text-forest transition-colors">The Challenge</a>
+                <a href="#how-it-works" class="hover:text-forest transition-colors">How It Works</a>
+                <a href="#dashboard" class="hover:text-forest transition-colors">Live Dashboard</a>
+                <a href="#impact" class="hover:text-forest transition-colors">Impact</a>
+                <a href="#architecture" class="hover:text-forest transition-colors">Architecture</a>
+            </nav>
+
+            <div class="flex items-center space-x-4">
+                <a href="#cta" class="hidden sm:inline-flex text-sm font-medium text-forest hover:text-forestHover px-4 py-2">
+                    Sign In
+                </a>
+                <a href="#cta" class="bg-forest text-cream px-5 py-2.5 rounded-full text-sm font-medium hover:bg-forestHover transition-all shadow-sm">
+                    Request Access
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="w-full max-w-[1440px] mx-auto">
+
+        <!-- 1. Hero Section -->
+        <section class="py-16 sm:py-24 px-6 sm:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+            <!-- Left Aligned Copy -->
+            <div class="lg:col-span-7 flex flex-col items-start space-y-8">
+                <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-sandLight border border-sand text-xs font-semibold text-forest uppercase tracking-wider">
+                    <span class="w-2 h-2 rounded-full bg-forest inline-block"></span>
+                    <span>Autonomous Family Healthcare Infrastructure</span>
+                </div>
+
+                <h1 class="font-serif text-4xl sm:text-6xl lg:text-7xl font-normal leading-[1.08] text-forest">
+                    The AI coordinator for aging parents.
+                </h1>
+
+                <p class="text-lg sm:text-xl text-muted font-normal max-w-2xl leading-relaxed">
+                    CareBridge acts as the executive supervisor for eldercare. It orchestrates medications, doctor schedules, home aides, and family syncing—turning eldercare chaos into quiet, reliable operations.
+                </p>
+
+                <!-- Two CTAs -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                    <a href="#cta" class="bg-forest text-cream font-medium px-8 py-4 rounded-full text-center hover:bg-forestHover transition-all shadow-sm flex items-center justify-center space-x-2">
+                        <span>Deploy CareBridge</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </a>
+                    <a href="#dashboard" class="bg-transparent border border-sand text-forest font-medium px-8 py-4 rounded-full text-center hover:bg-sandLight transition-all flex items-center justify-center">
+                        Explore Live Demo
+                    </a>
+                </div>
+
+                <!-- Three Stat Chips -->
+                <div class="grid grid-cols-3 gap-4 pt-6 border-t border-sand w-full">
+                    <div>
+                        <div class="font-serif text-2xl sm:text-3xl text-forest font-semibold">27 hrs</div>
+                        <div class="text-xs sm:text-sm text-muted mt-0.5">Saved monthly per family</div>
+                    </div>
+                    <div>
+                        <div class="font-serif text-2xl sm:text-3xl text-forest font-semibold">99.4%</div>
+                        <div class="text-xs sm:text-sm text-muted mt-0.5">Medication accuracy</div>
+                    </div>
+                    <div>
+                        <div class="font-serif text-2xl sm:text-3xl text-forest font-semibold">5 min</div>
+                        <div class="text-xs sm:text-sm text-muted mt-0.5">Setup time</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Floating Product Moment Card -->
+            <div class="lg:col-span-5 relative flex justify-center">
+                <div class="absolute -inset-4 bg-gradient-to-tr from-mint/20 to-sand/40 rounded-3xl blur-2xl -z-10"></div>
+                
+                <div class="w-full max-w-md bg-white border border-sand rounded-2xl shadow-xl p-6 relative">
+                    <!-- Top notification tag -->
+                    <div class="flex items-center justify-between pb-4 border-b border-sand">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 rounded-full bg-mint mint-pulse inline-block"></span>
+                            <span class="text-xs font-semibold uppercase tracking-wider text-forest">Live Agent Activity</span>
+                        </div>
+                        <span class="text-xs text-muted font-mono">ID: AGT-8842</span>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="py-6 space-y-4">
+                        <div class="bg-cream border border-sand rounded-xl p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-bold text-forest bg-mintLight px-2 py-1 rounded">Supervisor Agent</span>
+                                <span class="text-xs text-muted">2s ago</span>
+                            </div>
+                            <p class="text-sm font-medium text-charcoal">
+                                Supervisor &rarr; Medication Agent &middot; refill ordered at CVS #4192
+                            </p>
+                        </div>
+
+                        <div class="space-y-2.5">
+                            <div class="flex items-center justify-between text-xs text-muted px-1">
+                                <span class="font-medium text-charcoal">Active Sub-Agents</span>
+                                <span class="text-forest font-semibold">4 Online</span>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between p-3 rounded-lg bg-white border border-sand/80 shadow-2xs">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 rounded-lg bg-mintLight text-forest flex items-center justify-center">
+                                            <i class="fa-solid fa-pills text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs font-semibold text-charcoal">Medication Agent</div>
+                                            <div class="text-[11px] text-muted">Verified morning dosage</div>
+                                        </div>
+                                    </div>
+                                    <span class="text-[10px] bg-mint/30 text-forest px-2 py-0.5 rounded-full font-medium">Idle / Ready</span>
+                                </div>
+
+                                <div class="flex items-center justify-between p-3 rounded-lg bg-white border border-sand/80 shadow-2xs">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-8 h-8 rounded-lg bg-mintLight text-forest flex items-center justify-center">
+                                            <i class="fa-solid fa-calendar-check text-xs"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-xs font-semibold text-charcoal">Appointment Agent</div>
+                                            <div class="text-[11px] text-muted">Dr. Vance on Thursday @ 2PM</div>
+                                        </div>
+                                    </div>
+                                    <span class="text-[10px] bg-forest text-cream px-2 py-0.5 rounded-full font-medium">Active Now</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer of card -->
+                    <div class="pt-4 border-t border-sand flex items-center justify-between text-xs text-muted">
+                        <span>Encrypted HIPAA Vault</span>
+                        <span class="text-forest font-medium flex items-center space-x-1">
+                            <i class="fa-solid fa-shield-halved text-xs"></i>
+                            <span>Secured</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Problem Section (Crisp White) -->
+        <section id="problem" class="bg-white py-20 sm:py-28 px-6 sm:px-12 border-y border-[#E8DCC4]">
+            <div class="max-w-4xl mx-auto text-center space-y-4 mb-16">
+                <span class="text-xs font-semibold uppercase tracking-wider text-forest bg-sandLight px-3 py-1 rounded-full">The Caregiving Crisis</span>
+                <h2 class="font-serif text-3xl sm:text-5xl text-forest font-normal">
+                    You became the integration layer.
+                </h2>
+                <p class="text-base sm:text-lg text-muted max-w-2xl mx-auto">
+                    Between pharmacy call queues, portal logins, conflicting sibling group chats, and missed vitals, modern caregiving demands full-time operational management on top of your career.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Card 1 -->
+                <div class="bg-white border border-sand rounded-2xl p-8 shadow-sm flex flex-col justify-between hover:border-forest/40 transition-all">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-mintLight text-forest flex items-center justify-center text-lg mb-6">
+                            <i class="fa-solid fa-phone-slash"></i>
+                        </div>
+                        <h3 class="font-serif text-xl font-normal text-forest mb-3">The Endless Phone Queue</h3>
+                        <p class="text-sm text-muted leading-relaxed">
+                            Spending 45 minutes on hold with insurance providers, Medicare reps, and pharmacy refill desks just to clarify a copay discrepancy.
+                        </p>
+                    </div>
+                    <div class="mt-8 pt-4 border-t border-sand/60 text-xs font-semibold text-forest flex items-center justify-between">
+                        <span>Average weekly loss</span>
+                        <span class="font-mono bg-sandLight px-2 py-1 rounded">6.4 hours</span>
+                    </div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="bg-white border border-sand rounded-2xl p-8 shadow-sm flex flex-col justify-between hover:border-forest/40 transition-all">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-mintLight text-forest flex items-center justify-center text-lg mb-6">
+                            <i class="fa-solid fa-comments"></i>
+                        </div>
+                        <h3 class="font-serif text-xl font-normal text-forest mb-3">Sibling Alignment Drag</h3>
+                        <p class="text-sm text-muted leading-relaxed">
+                            Endless text threads arguing about who called mom, who paid for groceries, and why medical updates are perpetually out of sync.
+                        </p>
+                    </div>
+                    <div class="mt-8 pt-4 border-t border-sand/60 text-xs font-semibold text-forest flex items-center justify-between">
+                        <span>Communication friction</span>
+                        <span class="font-mono bg-sandLight px-2 py-1 rounded">High Stress</span>
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="bg-white border border-sand rounded-2xl p-8 shadow-sm flex flex-col justify-between hover:border-forest/40 transition-all">
+                    <div>
+                        <div class="w-12 h-12 rounded-xl bg-mintLight text-forest flex items-center justify-center text-lg mb-6">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <h3 class="font-serif text-xl font-normal text-forest mb-3">Fragmented Health Data</h3>
+                        <p class="text-sm text-muted leading-relaxed">
+                            Scattered pill bottles, paper appointment cards, blood pressure logs on sticky notes, and zero unified oversight across specialists.
+                        </p>
+                    </div>
+                    <div class="mt-8 pt-4 border-t border-sand/60 text-xs font-semibold text-forest flex items-center justify-between">
+                        <span>Risk factor</span>
+                        <span class="font-mono bg-sandLight px-2 py-1 rounded">Missed Doses</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. How It Works Section (Cream) -->
+        <section id="how-it-works" class="py-20 sm:py-28 px-6 sm:px-12">
+            <div class="max-w-4xl mx-auto text-center space-y-4 mb-16">
+                <span class="text-xs font-semibold uppercase tracking-wider text-forest bg-sandLight px-3 py-1 rounded-full">Autonomous Orchestration</span>
+                <h2 class="font-serif text-3xl sm:text-5xl text-forest font-normal">
+                    Five agents. One supervisor. Zero chasing.
+                </h2>
+                <p class="text-base sm:text-lg text-muted max-w-2xl mx-auto">
+                    CareBridge replaces manual tracking with an autonomous multi-agent system that runs 24/7 in the background.
+                </p>
+            </div>
+
+            <!-- 5-Node Diagram (Interactive Visual) -->
+            <div class="bg-white border border-sand rounded-3xl p-8 sm:p-12 mb-16 shadow-sm relative overflow-hidden">
+                <div class="absolute inset-0 bg-[radial-gradient(#E8DCC4_1px,transparent_1px)] [background-size:24px_24px] opacity-45 pointer-events-none"></div>
+                
+                <div class="relative z-10">
+                    <div class="text-center mb-10">
+                        <span class="text-xs uppercase font-bold tracking-widest text-muted bg-sandLight px-3 py-1 rounded-full">Interactive Agent Topology</span>
+                    </div>
+
+                    <!-- Diagram Container -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center max-w-5xl mx-auto">
+                        <!-- Left Satellites -->
+                        <div class="space-y-4">
+                            <div class="bg-cream border border-sand p-4 rounded-xl shadow-2xs hover:border-forest transition-colors">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-9 h-9 rounded-lg bg-mintLight text-forest flex items-center justify-center font-semibold">1</div>
+                                    <div>
+                                        <div class="text-sm font-semibold text-forest">Medication Agent</div>
+                                        <div class="text-xs text-muted">Refills & timing logs</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-cream border border-sand p-4 rounded-xl shadow-2xs hover:border-forest transition-colors">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-9 h-9 rounded-lg bg-mintLight text-forest flex items-center justify-center font-semibold">2</div>
+                                    <div>
+                                        <div class="text-sm font-semibold text-forest">Appointment Agent</div>
+                                        <div class="text-xs text-muted">Scheduling & ride coordination</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Center Supervisor -->
+                        <div class="flex flex-col items-center justify-center p-6 bg-forest text-cream rounded-2xl shadow-xl text-center relative">
+                            <div class="absolute -top-3 bg-mint text-forest text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider">
+                                Central Brain
+                            </div>
+                            <div class="w-16 h-16 rounded-full bg-cream/10 border border-mint/30 flex items-center justify-center mb-4 text-2xl">
+                                <i class="fa-solid fa-brain text-mint"></i>
+                            </div>
+                            <h3 class="font-serif text-xl font-medium mb-1">Supervisor Agent</h3>
+                            <p class="text-xs text-mint/80 max-w-xs">
+                                Evaluates inbound feeds, cross-checks clinical safety, and broadcasts clean updates.
+                            </p>
+                        </div>
+
+                        <!-- Right Satellites -->
+                        <div class="space-y-4">
+                            <div class="bg-cream border border-sand p-4 rounded-xl shadow-2xs hover:border-forest transition-colors">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-9 h-9 rounded-lg bg-mintLight text-forest flex items-center justify-center font-semibold">3</div>
+                                    <div>
+                                        <div class="text-sm font-semibold text-forest">Vitals & Home Agent</div>
+                                        <div class="text-xs text-muted">BP, glucose & fall detection</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-cream border border-sand p-4 rounded-xl shadow-2xs hover:border-forest transition-colors">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-9 h-9 rounded-lg bg-mintLight text-forest flex items-center justify-center font-semibold">4</div>
+                                    <div>
+                                        <div class="text-sm font-semibold text-forest">Family Sync Agent</div>
+                                        <div class="text-xs text-muted">Consolidated morning digest</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Three Steps Below -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white border border-sand rounded-2xl p-8">
+                    <div class="font-serif text-4xl text-forest/30 font-bold mb-4">01</div>
+                    <h3 class="font-serif text-xl text-forest font-normal mb-2">Connect Sources</h3>
+                    <p class="text-sm text-muted">
+                        Securely link pharmacy accounts, provider portals, and smart home health devices in under 5 minutes with our encrypted onboarding flow.
+                    </p>
+                </div>
+                <div class="bg-white border border-sand rounded-2xl p-8">
+                    <div class="font-serif text-4xl text-forest/30 font-bold mb-4">02</div>
+                    <h3 class="font-serif text-xl text-forest font-normal mb-2">Autonomous Execution</h3>
+                    <p class="text-sm text-muted">
+                        The supervisor handles routine friction—rescheduling missed appointments, requesting prescription refills, and logging daily check-ins.
+                    </p>
+                </div>
+                <div class="bg-white border border-sand rounded-2xl p-8">
+                    <div class="font-serif text-4xl text-forest/30 font-bold mb-4">03</div>
+                    <h3 class="font-serif text-xl text-forest font-normal mb-2">Quiet Family Sync</h3>
+                    <p class="text-sm text-muted">
+                        Instead of frantic calls, family members receive a clean, bulleted morning briefing summarizing status, upcoming visits, and necessary actions.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Live Dashboard Preview Section (Off-white #F3EFE6) -->
+        <section id="dashboard" class="bg-offwhite py-20 sm:py-28 px-6 sm:px-12 border-y border-[#E8DCC4]">
+            <div class="max-w-4xl mx-auto text-center space-y-4 mb-16">
+                <span class="text-xs font-semibold uppercase tracking-wider text-forest bg-white px-3 py-1 rounded-full shadow-2xs">Interactive Preview</span>
+                <h2 class="font-serif text-3xl sm:text-5xl text-forest font-normal">
+                    The dashboard your sibling will actually use.
+                </h2>
+                <p class="text-base sm:text-lg text-muted max-w-2xl mx-auto">
+                    No cluttered spreadsheets or confusing hospital logins. Clean, calm operational clarity built for busy family members.
+                </p>
+            </div>
+
+            <!-- Large Mint-Bordered Frame with LIVE DEMO Badge -->
+            <div class="max-w-6xl mx-auto bg-white border-2 border-mint rounded-3xl shadow-xl overflow-hidden relative">
+                <!-- Floating LIVE DEMO Badge -->
+                <div class="absolute top-6 right-6 z-20 bg-forest text-cream px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider flex items-center space-x-2 shadow-md">
+                    <span class="w-2 h-2 rounded-full bg-mint mint-pulse inline-block"></span>
+                    <span>LIVE DEMO</span>
+                </div>
+
+                <!-- Dashboard Header -->
+                <div class="bg-cream border-b border-sand px-6 sm:px-8 py-5 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-10 h-10 rounded-full bg-forest text-cream font-serif font-bold flex items-center justify-center">
+                            MR
+                        </div>
+                        <div>
+                            <h3 class="font-serif text-lg text-forest font-medium">Margaret’s Care Hub</h3>
+                            <p class="text-xs text-muted">Last synced 4 mins ago · All systems normal</p>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard Tabs -->
+                    <div class="flex items-center space-x-2 bg-sandLight p-1 rounded-xl border border-sand text-xs font-medium">
+                        <button onclick="switchTab('medication')" id="tab-medication" class="px-4 py-2 rounded-lg bg-white text-forest shadow-2xs transition-all">Medication</button>
+                        <button onclick="switchTab('appointment')" id="tab-appointment" class="px-4 py-2 rounded-lg text-muted hover:text-forest transition-all">Appointments</button>
+                        <button onclick="switchTab('vital')" id="tab-vital" class="px-4 py-2 rounded-lg text-muted hover:text-forest transition-all">Vitals</button>
+                        <button onclick="switchTab('family')" id="tab-family" class="px-4 py-2 rounded-lg text-muted hover:text-forest transition-all">Family Sync</button>
+                    </div>
+                </div>
+
+                <!-- Dashboard Content Area -->
+                <div class="p-6 sm:p-10 min-h-[380px] bg-white">
+                    <!-- Tab Content: Medication -->
+                    <div id="content-medication" class="space-y-6">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-serif text-xl text-forest">Active Medication Schedule & Refills</h4>
+                            <span class="text-xs bg-mintLight text-forest px-3 py-1 rounded-full font-medium">Autonomous Refill Enabled</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="border border-sand rounded-xl p-5 bg-cream/50 flex items-center justify-between">
+                                <div class="flex items-start space-x-4">
+                                    <div class="w-10 h-10 rounded-xl bg-mintLight text-forest flex items-center justify-center text-lg mt-0.5">
+                                        <i class="fa-solid fa-pills"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-charcoal">Lisinopril 10mg</div>
+                                        <div class="text-xs text-muted mt-0.5">1 tablet daily with breakfast</div>
+                                        <div class="text-[11px] text-forest font-medium mt-2">Refill ordered at CVS &middot; Arrives Thursday</div>
+                                    </div>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold">Verified</span>
+                            </div>
+
+                            <div class="border border-sand rounded-xl p-5 bg-cream/50 flex items-center justify-between">
+                                <div class="flex items-start space-x-4">
+                                    <div class="w-10 h-10 rounded-xl bg-mintLight text-forest flex items-center justify-center text-lg mt-0.5">
+                                        <i class="fa-solid fa-pills"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-charcoal">Metformin 500mg</div>
+                                        <div class="text-xs text-muted mt-0.5">2 tablets daily with meals</div>
+                                        <div class="text-[11px] text-muted mt-2">14 pills remaining &middot; Next refill in 6 days</div>
+                                    </div>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold">Queued</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content: Appointment -->
+                    <div id="content-appointment" class="space-y-6 hidden">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-serif text-xl text-forest">Upcoming Appointments & Transit</h4>
+                            <span class="text-xs bg-mintLight text-forest px-3 py-1 rounded-full font-medium">Ride Connected</span>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div class="border border-sand rounded-xl p-5 bg-cream/50 flex items-center justify-between">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-10 h-10 rounded-xl bg-mintLight text-forest flex items-center justify-center text-lg">
+                                        <i class="fa-solid fa-stethoscope"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-charcoal">Cardiology Follow-up with Dr. Vance</div>
+                                        <div class="text-xs text-muted">Thursday, Oct 14 at 2:00 PM · Mercy General Hospital</div>
+                                    </div>
+                                </div>
+                                <span class="px-3 py-1 rounded-full bg-mint/40 text-forest text-xs font-semibold">Uber Health Booked</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content: Vital -->
+                    <div id="content-vital" class="space-y-6 hidden">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-serif text-xl text-forest">Daily Vitals & Smart Home Feed</h4>
+                            <span class="text-xs bg-mintLight text-forest px-3 py-1 rounded-full font-medium">All Sensors Active</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="border border-sand rounded-xl p-5 bg-cream/50">
+                                <div class="text-xs text-muted mb-1">Blood Pressure</div>
+                                <div class="font-serif text-2xl text-forest font-semibold">122/80</div>
+                                <div class="text-[11px] text-emerald-700 mt-2 font-medium">Normal range &middot; Checked 8:00 AM</div>
+                            </div>
+                            <div class="border border-sand rounded-xl p-5 bg-cream/50">
+                                <div class="text-xs text-muted mb-1">Blood Glucose</div>
+                                <div class="font-serif text-2xl text-forest font-semibold">108 mg/dL</div>
+                                <div class="text-[11px] text-emerald-700 mt-2 font-medium">Stable &middot; Fasting reading</div>
+                            </div>
+                            <div class="border border-sand rounded-xl p-5 bg-cream/50">
+                                <div class="text-xs text-muted mb-1">Activity Index</div>
+                                <div class="font-serif text-2xl text-forest font-semibold">2,410 steps</div>
+                                <div class="text-[11px] text-muted mt-2">Before noon</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content: Family Sync -->
+                    <div id="content-family" class="space-y-6 hidden">
+                        <div class="flex items-center justify-between">
+                            <h4 class="font-serif text-xl text-forest">Family Sync Log & Morning Digest</h4>
+                            <span class="text-xs bg-mintLight text-forest px-3 py-1 rounded-full font-medium">Sent to 3 Siblings</span>
+                        </div>
+
+                        <div class="border border-sand rounded-xl p-5 bg-cream/50 space-y-3">
+                            <div class="flex items-center justify-between text-xs text-muted border-b border-sand pb-2">
+                                <span>Today's Digest · Sent via SMS & WhatsApp at 7:30 AM</span>
+                                <span class="text-forest font-medium">Read by Sarah & Mark</span>
+                            </div>
+                            <p class="text-sm text-charcoal leading-relaxed">
+                                "Good morning family! Margaret took her morning Lisinopril on time. Vitals are steady at 122/80. Prescription refill is confirmed for Thursday pickup. No action needed today."
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Impact Section (Cream) -->
+        <section id="impact" class="py-20 sm:py-28 px-6 sm:px-12">
+            <div class="max-w-4xl mx-auto text-center space-y-4 mb-16">
+                <span class="text-xs font-semibold uppercase tracking-wider text-forest bg-sandLight px-3 py-1 rounded-full">Quantifiable Outcomes</span>
+                <h2 class="font-serif text-3xl sm:text-5xl text-forest font-normal">
+                    What changes when coordination runs itself.
+                </h2>
+                <p class="text-base sm:text-lg text-muted max-w-2xl mx-auto">
+                    CareBridge replaces mental exhaustion with structured reliability, protecting both your parents' health and your career.
+                </p>
+            </div>
+
+            <!-- Three Big Serif Numbers Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Stat 1 -->
+                <div class="bg-white border border-sand rounded-3xl p-10 text-center shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 left-0 right-0 h-1.5 bg-mint"></div>
+                    <div class="font-serif text-6xl sm:text-7xl text-forest font-normal mb-4">27 hrs</div>
+                    <h3 class="font-serif text-xl text-forest mb-2">Saved Monthly Per Family</h3>
+                    <p class="text-sm text-muted">
+                        Eliminates phone queues, insurance holds, medication sorting, and sibling coordination overhead.
+                    </p>
+                </div>
+
+                <!-- Stat 2 -->
+                <div class="bg-white border border-sand rounded-3xl p-10 text-center shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 left-0 right-0 h-1.5 bg-mint"></div>
+                    <div class="font-serif text-6xl sm:text-7xl text-forest font-normal mb-4">45%</div>
+                    <h3 class="font-serif text-xl text-forest mb-2">Lower Medication Errors</h3>
+                    <p class="text-sm text-muted">
+                        Autonomous cross-checks and refill tracking prevent missed dosages and prescription mix-ups.
+                    </p>
+                </div>
+
+                <!-- Stat 3 -->
+                <div class="bg-white border border-sand rounded-3xl p-10 text-center shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 left-0 right-0 h-1.5 bg-mint"></div>
+                    <div class="font-serif text-6xl sm:text-7xl text-forest font-normal mb-4">100%</div>
+                    <h3 class="font-serif text-xl text-forest mb-2">Peace of Mind</h3>
+                    <p class="text-sm text-muted">
+                        Every sibling stays automatically informed through clean morning briefings without emotional friction.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. Architecture Section (Crisp White #FFFFFF) -->
+        <section id="architecture" class="bg-white py-20 sm:py-28 px-6 sm:px-12 border-y border-[#E8DCC4]">
+            <div class="max-w-4xl mx-auto text-center space-y-4 mb-16">
+                <span class="text-xs font-semibold uppercase tracking-wider text-forest bg-sandLight px-3 py-1 rounded-full">Enterprise Grade Security</span>
+                <h2 class="font-serif text-3xl sm:text-5xl text-forest font-normal">
+                    Production-grade. Provider-agnostic. Yours.
+                </h2>
+                <p class="text-base sm:text-lg text-muted max-w-2xl mx-auto">
+                    Built for absolute data privacy with enterprise-grade encryption and zero vendor lock-in.
+                </p>
+            </div>
+
+            <!-- Floating Chips & Paragraph Container -->
+            <div class="max-w-4xl mx-auto bg-cream border border-sand rounded-3xl p-8 sm:p-12 shadow-sm space-y-8">
+                <!-- Floating Technology Chips -->
+                <div class="flex flex-wrap items-center justify-center gap-3">
+                    <span class="px-4 py-2 rounded-full bg-white border border-sand text-xs font-semibold text-forest shadow-2xs">HIPAA Compliant Vault</span>
+                    <span class="px-4 py-2 rounded-full bg-white border border-sand text-xs font-semibold text-forest shadow-2xs">FHIR / HL7 Interoperability</span>
+                    <span class="px-4 py-2 rounded-full bg-white border border-sand text-xs font-semibold text-forest shadow-2xs">Zero Data Selling</span>
+                    <span class="px-4 py-2 rounded-full bg-white border border-sand text-xs font-semibold text-forest shadow-2xs">SOC2 Type II Certified</span>
+                    <span class="px-4 py-2 rounded-full bg-white border border-sand text-xs font-semibold text-forest shadow-2xs">Provider Agnostic</span>
+                </div>
+
+                <!-- Technical Overview Paragraph -->
+                <p class="text-base sm:text-lg text-charcoal leading-relaxed text-center max-w-2xl mx-auto font-normal">
+                    CareBridge operates on an isolated, client-owned virtual healthcare instance. We connect seamlessly with Epic, Cerner, major pharmacy networks, and consumer health wearables without storing raw personal identifiers beyond what is strictly necessary to run your family's operational workflow.
+                </p>
+
+                <div class="pt-6 border-t border-sand flex flex-wrap items-center justify-center gap-6 text-xs text-muted font-medium">
+                    <span class="flex items-center space-x-1.5"><i class="fa-solid fa-lock text-forest"></i><span>End-to-End AES-256</span></span>
+                    <span class="flex items-center space-x-1.5"><i class="fa-solid fa-server text-forest"></i><span>Dedicated Tenant DB</span></span>
+                    <span class="flex items-center space-x-1.5"><i class="fa-solid fa-key text-forest"></i><span>Bring Your Own Key (BYOK)</span></span>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. CTA + Footer Section (Cream centered) -->
+        <section id="cta" class="py-24 sm:py-32 px-6 sm:px-12 text-center relative">
+            <div class="max-w-3xl mx-auto space-y-8">
+                <span class="text-xs font-semibold uppercase tracking-wider text-forest bg-sandLight px-3 py-1 rounded-full inline-block">Get Started Today</span>
+                
+                <h2 class="font-serif text-4xl sm:text-6xl text-forest font-normal leading-tight">
+                    The agent that owns the workflow.
+                </h2>
+
+                <p class="text-base sm:text-lg text-muted max-w-xl mx-auto">
+                    Join hundreds of families who have replaced eldercare chaos with quiet, reliable autonomous coordination.
+                </p>
+
+                <!-- Email Input & CTA Button -->
+                <form onsubmit="handleSignup(event)" class="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-3 max-w-md mx-auto">
+                    <input type="email" id="signup-email" placeholder="Enter your email address" required class="w-full px-6 py-4 rounded-full bg-white border border-sand text-charcoal placeholder-muted focus:outline-none focus:border-forest shadow-sm text-sm">
+                    <button type="submit" class="w-full sm:w-auto bg-forest text-cream font-medium px-8 py-4 rounded-full hover:bg-forestHover transition-all shadow-sm text-sm whitespace-nowrap">
+                        Request Access
+                    </button>
+                </form>
+
+                <div id="signup-success" class="hidden text-sm text-forest font-medium bg-mintLight p-3 rounded-xl max-w-md mx-auto">
+                    Thank you! We've reserved your access priority. Check your inbox for setup instructions.
+                </div>
+
+                <div class="text-xs text-muted pt-2">
+                    No credit card required &middot; 14-day trial &middot; Setup in 5 minutes
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Editorial Footer -->
+    <footer class="bg-white border-t border-[#E8DCC4] py-16 px-6 sm:px-12">
+        <div class="max-w-[1440px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
+            <div class="space-y-4 md:col-span-1">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-forest flex items-center justify-center text-cream font-serif font-bold text-sm">
+                        CB
+                    </div>
+                    <span class="font-serif text-xl font-semibold text-forest">CareBridge</span>
+                </div>
+                <p class="text-xs text-muted leading-relaxed">
+                    The autonomous AI coordinator for aging parents and modern families.
+                </p>
+            </div>
+
+            <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-forest mb-4">Platform</h4>
+                <ul class="space-y-2 text-xs text-muted">
+                    <li><a href="#how-it-works" class="hover:text-forest transition-colors">Supervisor Agents</a></li>
+                    <li><a href="#dashboard" class="hover:text-forest transition-colors">Live Dashboard</a></li>
+                    <li><a href="#architecture" class="hover:text-forest transition-colors">HIPAA Security</a></li>
+                    <li><a href="#impact" class="hover:text-forest transition-colors">Family Sync</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-forest mb-4">Company</h4>
+                <ul class="space-y-2 text-xs text-muted">
+                    <li><a href="#" class="hover:text-forest transition-colors">About</a></li>
+                    <li><a href="#" class="hover:text-forest transition-colors">Editorial & Research</a></li>
+                    <li><a href="#" class="hover:text-forest transition-colors">Privacy Policy</a></li>
+                    <li><a href="#" class="hover:text-forest transition-colors">Terms of Service</a></li>
+                </ul>
+            </div>
+
+            <div>
+                <h4 class="text-xs font-bold uppercase tracking-wider text-forest mb-4">Newsletter</h4>
+                <p class="text-xs text-muted mb-3">
+                    Subscribe to <span class="italic font-serif">The Operational Caregiver</span>, our weekly publication on aging and AI.
+                </p>
+                <div class="flex items-center space-x-2">
+                    <input type="email" placeholder="Your email" class="w-full px-3 py-2 text-xs rounded-lg bg-cream border border-sand focus:outline-none focus:border-forest">
+                    <button class="bg-forest text-cream px-3 py-2 text-xs rounded-lg hover:bg-forestHover transition-colors">Join</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-[1440px] mx-auto pt-8 border-t border-sand flex flex-col sm:flex-row items-center justify-between text-xs text-muted">
+            <div>&copy; 2026 CareBridge Technologies, Inc. All rights reserved.</div>
+            <div class="flex space-x-6 mt-4 sm:mt-0">
+                <a href="#" class="hover:text-forest transition-colors">Privacy</a>
+                <a href="#" class="hover:text-forest transition-colors">Terms</a>
+                <a href="#" class="hover:text-forest transition-colors">Security</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Interactive JavaScript -->
+    <script>
+        // Switcher logic for Live Dashboard Preview tabs
+        function switchTab(tabName) {
+            // Hide all contents
+            document.getElementById('content-medication').classList.add('hidden');
+            document.getElementById('content-appointment').classList.add('hidden');
+            document.getElementById('content-vital').classList.add('hidden');
+            document.getElementById('content-family').classList.add('hidden');
+
+            // Reset tab styles
+            document.getElementById('tab-medication').className = 'px-4 py-2 rounded-lg text-muted hover:text-forest transition-all';
+            document.getElementById('tab-appointment').className = 'px-4 py-2 rounded-lg text-muted hover:text-forest transition-all';
+            document.getElementById('tab-vital').className = 'px-4 py-2 rounded-lg text-muted hover:text-forest transition-all';
+            document.getElementById('tab-family').className = 'px-4 py-2 rounded-lg text-muted hover:text-forest transition-all';
+
+            // Show selected content and activate tab
+            document.getElementById('content-' + tabName).classList.remove('hidden');
+            document.getElementById('tab-' + tabName).className = 'px-4 py-2 rounded-lg bg-white text-forest shadow-2xs transition-all';
+        }
+
+        // Signup form handler
+        function handleSignup(event) {
+            event.preventDefault();
+            const emailInput = document.getElementById('signup-email').value;
+            if(emailInput) {
+                document.getElementById('signup-success').classList.remove('hidden');
+                document.getElementById('signup-email').value = '';
+            }
+        }
+    </script>
+
+</body>
+</html>

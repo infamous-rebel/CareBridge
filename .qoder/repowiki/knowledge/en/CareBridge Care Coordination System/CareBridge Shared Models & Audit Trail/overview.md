@@ -1,0 +1,1 @@
+Defines Pydantic v2 data schemas, an immutable SQLite audit log, and deterministic escalation classification used by all CareBridge agents.

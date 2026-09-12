@@ -1,0 +1,1 @@
+pytest with async test functions; `unittest.mock.patch` and `AsyncMock` for external dependencies; SQLite-backed audit log used as an in-memory temp database per test via a shared fixture.

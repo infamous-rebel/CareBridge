@@ -1,0 +1,1 @@
+Pydantic v2 for schema validation and serialization; SQLite via the stdlib `sqlite3` module with trigger-enforced immutability for the audit trail; UUID v4 identifiers generated with `uuid.uuid4`.

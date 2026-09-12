@@ -1,0 +1,5 @@
+- Domain entities are modeled as Pydantic v2 `BaseModel` subclasses with typed fields, `Literal` enums for constrained values, and `Optional` defaults for non-required attributes.
+- Cross-cutting identifiers use `UUID` types (with `default_factory=uuid4` where appropriate) and string IDs for external entity references like `medication_id` and `care_recipient_id`.
+- Audit events are written as append-only records; mutations are blocked at the database layer by BEFORE UPDATE/DELETE triggers rather than application checks.
+- Escalation policy is encoded as module-level `set[str]` constants and evaluated by a single pure function that defaults unknown actions to the most restrictive outcome (`approve`).
+- Package surface is curated through `__init__.py` which re-exports only the public schemas, audit functions, and `classify_action`, keeping internal modules private.

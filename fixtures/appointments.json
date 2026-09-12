@@ -1,0 +1,32 @@
+[
+  {
+    "appointment_id": "apt-001",
+    "provider_name": "Dr. Sarah Chen",
+    "specialty": "Cardiology",
+    "datetime": "2026-09-12T10:00:00Z",
+    "location": "Heart Health Clinic, 123 Medical Dr",
+    "prep_required": ["Fasting 12 hours", "Bring medication list"],
+    "transportation_needed": false,
+    "care_recipient_id": "cr-001"
+  },
+  {
+    "appointment_id": "apt-002",
+    "provider_name": "Dr. Michael Park",
+    "specialty": "Endocrinology",
+    "datetime": "2026-09-16T14:30:00Z",
+    "location": "Diabetes Center, 456 Health Ave",
+    "prep_required": ["Blood glucose log for past week"],
+    "transportation_needed": true,
+    "care_recipient_id": "cr-001"
+  },
+  {
+    "appointment_id": "apt-003",
+    "provider_name": "Dr. Lisa Wong",
+    "specialty": "General Practice",
+    "datetime": "2026-10-02T09:00:00Z",
+    "location": "Family Medicine, 789 Care Blvd",
+    "prep_required": [],
+    "transportation_needed": false,
+    "care_recipient_id": "cr-001"
+  }
+]
