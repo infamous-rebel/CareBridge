@@ -12,6 +12,8 @@ All Firebase operations degrade gracefully: if the service account file is
 missing or malformed, a WARNING is logged and endpoints return 503.
 """
 
+import base64
+import json
 import logging
 import os
 import threading
@@ -82,9 +84,24 @@ def init_firebase() -> bool:
             except ValueError:
                 pass  # Not yet initialized; proceed.
 
-            # Priority 1: FIREBASE_CREDENTIALS_JSON env var (cloud deployment)
-            if settings.firebase_credentials_json:
-                import json
+            # Priority 1: FIREBASE_CREDENTIALS_B64 env var (safest for cloud)
+            if settings.firebase_credentials_b64:
+                try:
+                    cred_dict = json.loads(
+                        base64.b64decode(settings.firebase_credentials_b64)
+                    )
+                    cred = credentials.Certificate(cred_dict)
+                    logger.info("Firebase Admin initialized from FIREBASE_CREDENTIALS_B64")
+                except Exception as exc:
+                    logger.warning(
+                        "FIREBASE_CREDENTIALS_B64 is present but invalid: %s. "
+                        "Firebase endpoints will return 503.",
+                        exc,
+                    )
+                    _init_failed = True
+                    return False
+            # Priority 2: FIREBASE_CREDENTIALS_JSON env var
+            elif settings.firebase_credentials_json:
                 try:
                     cred_dict = json.loads(settings.firebase_credentials_json)
                     cred = credentials.Certificate(cred_dict)
@@ -98,7 +115,7 @@ def init_firebase() -> bool:
                     _init_failed = True
                     return False
             else:
-                # Priority 2: FIREBASE_SERVICE_ACCOUNT_PATH file
+                # Priority 3: FIREBASE_SERVICE_ACCOUNT_PATH file
                 sa_path = settings.firebase_service_account_path
                 if not os.path.exists(sa_path):
                     logger.warning(

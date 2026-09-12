@@ -29,6 +29,7 @@
 - Updated container orchestration with docker-compose for simplified deployment
 - Added security hardening with non-root user execution and proper file permissions
 - **Updated Firebase authentication to support cloud deployment scenarios with FIREBASE_CREDENTIALS_JSON environment variable**
+- **Added AUDIT_DB_PATH environment variable support for configurable audit database location in production deployments**
 
 ## Table of Contents
 1. Introduction
@@ -166,6 +167,7 @@ COM --> AUD
 - Configure appropriate CORS_ORIGINS for your frontend domains
 - Set up LLM_PROVIDER and corresponding API keys
 - Configure database connections (SQLite for dev, PostgreSQL for production)
+- **Configure AUDIT_DB_PATH for custom audit database location in production environments**
 
 **Section sources**
 - [Dockerfile:10-68](file://Dockerfile#L10-L68)
@@ -207,6 +209,37 @@ docker build --build-arg BUILD_GIT_SHA=$(git rev-parse HEAD) \
 - [Dockerfile:1-69](file://Dockerfile#L1-L69)
 - [docker-compose.yml:1-34](file://docker-compose.yml#L1-L34)
 - [.dockerignore:1-43](file://.dockerignore#L1-L43)
+
+### Audit Database Path Configuration
+**Updated** The audit logging system now supports configurable database paths through the `AUDIT_DB_PATH` environment variable, providing operational flexibility for production deployments.
+
+**Environment Variable Configuration:**
+- `AUDIT_DB_PATH`: Custom path for the audit SQLite database file
+- Default behavior: Falls back to `audit.db` in the current working directory if not set
+- Production usage: Set to writable directories like `/tmp/audit.db` or mounted volumes
+
+**Implementation Details:**
+- The audit module reads `AUDIT_DB_PATH` from environment variables at startup
+- All audit operations (write, read, initialization) use the configured path
+- Health checks verify audit database connectivity using the configured path
+- Test suite patches the DB_PATH for isolated testing environments
+
+**Production Deployment Examples:**
+```bash
+# Containerized deployment with writable temp directory
+export AUDIT_DB_PATH=/tmp/audit.db
+
+# Mounted volume for persistent storage
+export AUDIT_DB_PATH=/data/audit.db
+
+# Platform-specific configuration (Railway, Heroku, etc.)
+export AUDIT_DB_PATH=$TMPDIR/audit.db
+```
+
+**Section sources**
+- [src/models/audit_log.py:17](file://src/models/audit_log.py#L17)
+- [src/api/config.py:117-120](file://src/api/config.py#L117-L120)
+- [.env.example:98-101](file://.env.example#L98-L101)
 
 ### Health Check Endpoints and Operational Metrics
 CareBridge provides comprehensive health monitoring through dedicated endpoints:
@@ -506,6 +539,11 @@ Common issues and resolutions:
 - Port conflicts: Check port 8000 availability and update docker-compose.yml if needed
 - Health check failures: Inspect `/ready` endpoint response for dependency status
 
+**Audit Database Issues:**
+- **AUDIT_DB_PATH configuration**: Ensure the specified path is writable and accessible by the application user
+- **Permission errors**: Verify file system permissions for the audit database directory
+- **Path resolution**: Confirm that the environment variable is properly set and loaded by the application
+
 **Firebase Authentication Issues:**
 - Invalid FIREBASE_CREDENTIALS_JSON: Ensure JSON is properly formatted and contains all required fields
 - File-based configuration: Verify FIREBASE_SERVICE_ACCOUNT_PATH points to valid service account file
@@ -529,7 +567,7 @@ Common issues and resolutions:
 - [src/agents/supervisor_agent.py:318-339](file://src/agents/supervisor_agent.py#L318-L339)
 
 ## Conclusion
-CareBridge provides a robust, auditable, and scalable foundation for care coordination with comprehensive production deployment support. The enhanced containerization, health monitoring, configuration management, and Firebase authentication capabilities enable reliable operation in production environments while maintaining safety, auditability, and observability standards. By following this deployment guide—covering environment setup, containerization, cloud integration, scaling, monitoring, security, disaster recovery, and upgrades—you can operate the system reliably in production while maintaining safety and compliance.
+CareBridge provides a robust, auditable, and scalable foundation for care coordination with comprehensive production deployment support. The enhanced containerization, health monitoring, configuration management, Firebase authentication capabilities, and configurable audit database location enable reliable operation in production environments while maintaining safety, auditability, and observability standards. By following this deployment guide—covering environment setup, containerization, cloud integration, scaling, monitoring, security, disaster recovery, and upgrades—you can operate the system reliably in production while maintaining safety and compliance.
 
 ## Appendices
 
@@ -589,9 +627,22 @@ export FIREBASE_CREDENTIALS_JSON='{"type":"service_account","project_id":"..."}'
 export FIREBASE_SERVICE_ACCOUNT_PATH=/path/to/service-account.json
 ```
 
+**Audit Database Configuration:**
+```bash
+# Configure custom audit database location
+export AUDIT_DB_PATH=/tmp/audit.db
+
+# For persistent storage in containers
+export AUDIT_DB_PATH=/data/audit.db
+
+# For platform-specific temporary directories
+export AUDIT_DB_PATH=$TMPDIR/audit.db
+```
+
 **Section sources**
 - [docker-compose.yml:3-7](file://docker-compose.yml#L3-L7)
 - [Dockerfile:65-68](file://Dockerfile#L65-L68)
 - [requirements.txt:1-36](file://requirements.txt#L1-L36)
 - [src/api/routers/health.py:75-84](file://src/api/routers/health.py#L75-L84)
 - [.env.example:134-143](file://.env.example#L134-L143)
+- [.env.example:98-101](file://.env.example#L98-L101)
