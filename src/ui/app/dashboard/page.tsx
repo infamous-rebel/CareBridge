@@ -2,7 +2,10 @@
 
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/components/Toast";
 import LoadingShimmer from "@/components/LoadingShimmer";
 import ErrorState from "@/components/ErrorState";
 import EmptyState from "@/components/EmptyState";
@@ -17,6 +20,8 @@ import {
   Shield,
   Check,
   X,
+  AlertCircle,
+  Bot,
 } from "lucide-react";
 
 const CARE_RECIPIENT_ID = "cr-001";
@@ -43,54 +48,12 @@ const ACTIVITY_ICON: Record<string, string> = {
   send_email: "fa-envelope",
 };
 
-/* ── Family Action modal ─────────────────────────────────────────────── */
-function ActionModal({
-  action,
-  onClose,
-}: {
-  action: string | null;
-  onClose: () => void;
-}) {
-  if (!action) return null;
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/40 p-4 backdrop-blur-sm"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-    >
-      <div
-        className="w-full max-w-md rounded-2xl border border-sand bg-white p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between border-b border-sand pb-3">
-          <h3 className="font-serif text-lg text-forest">
-            {action} — CareBridge Agent
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-muted hover:text-forest text-sm"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        <p className="mt-4 text-sm leading-relaxed text-charcoal">
-          The autonomous supervisor agent is securely initiating{" "}
-          {action.toLowerCase()} for Evelyn Smith. You will receive an encrypted
-          status update within 60 seconds.
-        </p>
-        <div className="mt-6 flex justify-end">
-          <button
-            onClick={onClose}
-            className="rounded-xl bg-forest px-5 py-2.5 text-xs font-medium text-cream hover:bg-forest-hover"
-          >
-            Done
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+
+/* ── Chat response state ─────────────────────────────────────────────── */
+interface ChatResult {
+  question: string;
+  answer: string;
+  timestamp: Date;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -98,9 +61,15 @@ function ActionModal({
    ═══════════════════════════════════════════════════════════════════════ */
 export default function DashboardOverview() {
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const careRecipientId = user?.care_recipient_id || CARE_RECIPIENT_ID;
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
-  const [modalAction, setModalAction] = useState<string | null>(null);
+  const [chatResult, setChatResult] = useState<ChatResult | null>(null);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [lastQuestion, setLastQuestion] = useState("");
 
   /* ── data hooks ──────────────────────────────────────────────────── */
   const {
@@ -108,8 +77,8 @@ export default function DashboardOverview() {
     isLoading: statusLoading,
     isError: statusError,
   } = useQuery({
-    queryKey: ["status", CARE_RECIPIENT_ID],
-    queryFn: () => api.getStatus(CARE_RECIPIENT_ID),
+    queryKey: ["status", careRecipientId],
+    queryFn: () => api.getStatus(careRecipientId),
     refetchInterval: 30_000,
   });
 
@@ -117,24 +86,24 @@ export default function DashboardOverview() {
     data: medications,
     isLoading: medsLoading,
   } = useQuery({
-    queryKey: ["medications", CARE_RECIPIENT_ID],
-    queryFn: () => api.getMedications(CARE_RECIPIENT_ID),
+    queryKey: ["medications", careRecipientId],
+    queryFn: () => api.getMedications(careRecipientId),
   });
 
   const {
     data: appointments,
     isLoading: apptsLoading,
   } = useQuery({
-    queryKey: ["appointments", CARE_RECIPIENT_ID],
-    queryFn: () => api.getAppointments(CARE_RECIPIENT_ID, 90),
+    queryKey: ["appointments", careRecipientId],
+    queryFn: () => api.getAppointments(careRecipientId, 90),
   });
 
   const {
     data: alerts,
     isLoading: alertsLoading,
   } = useQuery({
-    queryKey: ["alerts", CARE_RECIPIENT_ID],
-    queryFn: () => api.getAlerts(CARE_RECIPIENT_ID),
+    queryKey: ["alerts", careRecipientId],
+    queryFn: () => api.getAlerts(careRecipientId),
     refetchInterval: 5_000,
   });
 
@@ -162,16 +131,51 @@ export default function DashboardOverview() {
   const handleChat = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
+    const question = chatInput.trim();
+    setLastQuestion(question);
     setChatLoading(true);
+    setChatError(null);
+    setChatResult(null);
     try {
-      const res = await api.query(CARE_RECIPIENT_ID, chatInput);
-      setModalAction(`Query: "${chatInput}"`);
-      void res;
-    } catch {
-      setModalAction("Query — Error");
+      const res = await api.query(careRecipientId, question);
+      setChatResult({
+        question: res.question || question,
+        answer: res.answer,
+        timestamp: new Date(),
+      });
+      // Invalidate audit/alerts so the new query event appears in Recent Activity.
+      queryClient.invalidateQueries({ queryKey: ["alerts"] });
+    } catch (err: unknown) {
+      const msg = err && typeof err === "object" && "error" in err
+        ? (err as { error: string }).error
+        : "Something went wrong. Please try again.";
+      setChatError(msg);
     } finally {
       setChatLoading(false);
       setChatInput("");
+    }
+  };
+
+  const handleChatRetry = () => {
+    setChatError(null);
+    setChatInput(lastQuestion);
+  };
+
+  /* ── quick action handlers ───────────────────────────────────────── */
+  const handleQuickAction = (label: string) => {
+    switch (label) {
+      case "Order Meds":
+        router.push("/dashboard/medications?action=create");
+        break;
+      case "Book Visit":
+        router.push("/dashboard/appointments?action=create");
+        break;
+      case "Video Call":
+        showToast("Video call feature coming soon", "info");
+        break;
+      case "Share Records":
+        showToast("Record sharing requires patient consent flow — coming soon", "info");
+        break;
     }
   };
 
@@ -385,7 +389,7 @@ export default function DashboardOverview() {
               ].map((a) => (
                 <button
                   key={a.label}
-                  onClick={() => setModalAction(a.label)}
+                  onClick={() => handleQuickAction(a.label)}
                   className="group flex flex-col items-center justify-center space-y-2 rounded-xl border border-sand bg-cream p-4 transition-all hover:border-forest"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-mint-light text-forest transition-transform group-hover:scale-105">
@@ -404,6 +408,49 @@ export default function DashboardOverview() {
       {/* ── Bottom Fixed Chat Bar ────────────────────────────────────── */}
       <div className="fixed bottom-0 left-60 right-0 z-30 border-t border-sand bg-cream/90 px-8 py-4 backdrop-blur-md">
         <div className="mx-auto max-w-4xl">
+          {/* Inline chat response panel */}
+          {(chatResult || chatError) && (
+            <div className="mb-3 rounded-xl border border-sand bg-white p-4 shadow-sm">
+              {chatError ? (
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-red-600">Query failed</p>
+                    <p className="mt-0.5 text-xs text-muted">{chatError}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setChatError(null);
+                      handleChatRetry();
+                    }}
+                    className="rounded-lg border border-sand px-3 py-1.5 text-xs font-medium text-charcoal transition-colors hover:bg-sand-light"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : chatResult ? (
+                <div>
+                  <div className="mb-2 flex items-center gap-2">
+                    <Bot className="h-4 w-4 text-forest" />
+                    <span className="text-xs font-semibold text-forest">CareBridge Agent</span>
+                    <span className="ml-auto font-mono text-[11px] text-muted">
+                      {chatResult.timestamp.toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                  <p className="mb-1.5 text-xs font-medium text-muted">
+                    You: {chatResult.question}
+                  </p>
+                  <p className="text-sm leading-relaxed text-charcoal">
+                    {chatResult.answer}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          )}
+
           <form onSubmit={handleChat} className="relative flex items-center">
             <input
               type="text"
@@ -429,15 +476,16 @@ export default function DashboardOverview() {
                 title="Send"
                 aria-label="Send"
               >
-                <ArrowUp className="h-4 w-4" />
+                {chatLoading ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-cream/30 border-t-cream" />
+                ) : (
+                  <ArrowUp className="h-4 w-4" />
+                )}
               </button>
             </div>
           </form>
         </div>
       </div>
-
-      {/* ── Action Modal ─────────────────────────────────────────────── */}
-      <ActionModal action={modalAction} onClose={() => setModalAction(null)} />
     </>
   );
 }

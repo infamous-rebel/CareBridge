@@ -223,6 +223,17 @@ async def firebase_exchange(
                 fb_user.uid, user.get("user_id"),
             )
 
+    # Ensure the user has a care_recipient (required for CRUD routers).
+    if not user.get("care_recipient_id"):
+        cr_id = user_store.create_care_recipient_for_user(
+            user["user_id"], fb_user.name,
+        )
+        user = user_store.get_user_by_id(user["user_id"])
+        logger.info(
+            "Created care_recipient %s for user %s",
+            cr_id, user.get("user_id"),
+        )
+
     # Issue CareBridge JWTs.
     access_token = create_access_token(user["user_id"], user["role"])
     refresh_token = create_refresh_token(user["user_id"], user["role"])
@@ -233,10 +244,18 @@ async def firebase_exchange(
         {"role": user["role"], "care_recipient_id": user.get("care_recipient_id", "")},
     )
 
-    # Audit trail.
+    # Audit trail — onboarding event when a care_recipient was just created.
     try:
         from src.models.audit_log import write_audit_event
 
+        write_audit_event(
+            actor="human",
+            action_type="onboard_new_user",
+            care_recipient_id=user.get("care_recipient_id") or "unassigned",
+            rationale=f"Firebase onboarding for uid={fb_user.uid}",
+            outcome="success",
+            correlation_id=str(uuid4()),
+        )
         write_audit_event(
             actor="human",
             action_type="login_firebase",

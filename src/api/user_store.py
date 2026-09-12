@@ -70,6 +70,15 @@ CREATE TABLE IF NOT EXISTS appointments (
 CREATE INDEX IF NOT EXISTS idx_appts_care_recipient
     ON appointments(care_recipient_id);
 
+CREATE TABLE IF NOT EXISTS care_recipients (
+    id TEXT PRIMARY KEY,
+    primary_user_id TEXT,
+    full_name TEXT NOT NULL DEFAULT 'My Parent',
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_cr_primary_user
+    ON care_recipients(primary_user_id);
+
 CREATE TABLE IF NOT EXISTS user_settings (
     user_id TEXT PRIMARY KEY,
     notification_prefs TEXT NOT NULL,
@@ -304,6 +313,46 @@ def create_user_from_firebase(
         firebase_uid=uid,
         db_path=db_path,
     )
+
+
+def create_care_recipient_for_user(
+    user_id: str,
+    full_name: Optional[str] = None,
+    db_path: Optional[str] = None,
+) -> str:
+    """Create a care_recipient row and link it to the user.
+
+    Args:
+        user_id: The CareBridge user_id to link.
+        full_name: Display name for the care recipient.
+        db_path: Override path; defaults to ``settings.auth_db_path``.
+
+    Returns:
+        The new care_recipient id.
+    """
+    path = _resolve_db(db_path)
+    cr_id = str(uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    display_name = full_name or "My Parent"
+    conn = _connect(path)
+    try:
+        conn.execute(
+            """INSERT INTO care_recipients
+               (id, primary_user_id, full_name, created_at)
+               VALUES (?, ?, ?, ?)""",
+            (cr_id, user_id, display_name, now),
+        )
+        conn.execute(
+            "UPDATE users SET care_recipient_id = ? WHERE user_id = ?",
+            (cr_id, user_id),
+        )
+        conn.commit()
+        logger.info(
+            "Created care_recipient %s for user %s", cr_id, user_id,
+        )
+        return cr_id
+    finally:
+        conn.close()
 
 
 def link_firebase_uid(

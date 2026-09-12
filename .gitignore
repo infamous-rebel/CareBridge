@@ -44,3 +44,6 @@ node_modules/
 
 # Firebase service account — never commit
 secrets/
+
+# Next.js build cache
+src/ui/.next/

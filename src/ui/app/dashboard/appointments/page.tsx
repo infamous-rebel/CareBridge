@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams, useRouter } from "next/navigation";
 import { api, type AppointmentOut } from "@/lib/api";
 import LoadingShimmer from "@/components/LoadingShimmer";
 import ErrorState from "@/components/ErrorState";
@@ -19,10 +20,22 @@ import {
 
 export default function AppointmentsPage() {
   const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const { showToast } = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AppointmentOut | null>(null);
   const [cancelling, setCancelling] = useState<AppointmentOut | null>(null);
+
+  // Auto-open modal when navigated with ?action=create
+  useEffect(() => {
+    if (searchParams.get("action") === "create") {
+      setEditing(null);
+      setModalOpen(true);
+      // Clean up the URL so refreshing doesn't re-open the modal
+      router.replace("/dashboard/appointments");
+    }
+  }, [searchParams, router]);
 
   const { data: appointments, isLoading, isError } = useQuery({
     queryKey: ["crud-appointments"],
