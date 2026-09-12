@@ -5,6 +5,7 @@ event (outcome="pending") MUST be written BEFORE executing the action.
 Events are append-only: UPDATE and DELETE are blocked by SQLite triggers.
 """
 
+import os
 import sqlite3
 import logging
 from datetime import datetime, timezone
@@ -13,7 +14,7 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = "audit.db"
+DB_PATH = os.getenv("AUDIT_DB_PATH", "audit.db")
 
 
 def init_audit_db(db_path: str = DB_PATH) -> None:

@@ -11,7 +11,16 @@
 - [test_medication_agent.py](file://tests/test_medication_agent.py)
 - [test_refill_flow.py](file://tests/integration/test_refill_flow.py)
 - [architecture.md](file://architecture.md)
+- [api.ts](file://src/ui/lib/api.ts)
+- [schemas.py](file://src/api/schemas.py)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Updated data model consistency section to reflect MedicationOutSchema active field correction
+- Enhanced API integration documentation with proper boolean type handling
+- Added frontend-backend schema validation details
+- Updated security considerations for data type validation
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -26,12 +35,14 @@
 10. [Conclusion](#conclusion)
 
 ## Introduction
-This document explains CareBridge’s medication tools that integrate with pharmacy services to manage refills, monitor inventory levels, and analyze adherence patterns. The tools provide three core functions:
+This document explains CareBridge's medication tools that integrate with pharmacy services to manage refills, monitor inventory levels, and analyze adherence patterns. The tools provide three core functions:
 - check_refill_status: monitors medication inventory levels and determines refill eligibility based on days remaining versus a configurable threshold.
 - order_refill: places prescription orders with an audit trail that records pending events before API calls and success/failure outcomes after.
 - detect_adherence_pattern: analyzes medication compliance over a time window and flags deviations for escalation.
 
 The implementation currently uses fixture data to simulate external pharmacy APIs, enabling development and testing without live integrations. A planned transition to a real MCP-based pharmacy integration is documented, including how the standardized interfaces will remain unchanged while swapping out the underlying transport.
+
+**Updated** Enhanced data model validation ensures consistent boolean types across the application stack, particularly for medication status fields.
 
 ## Project Structure
 The medication tools are implemented under src/tools and orchestrated by agents under src/agents. Shared models and utilities reside under src/models and src/tools respectively. Fixture data for development lives under fixtures. Tests validate behavior at both unit and integration levels.
@@ -45,9 +56,13 @@ end
 subgraph "Models"
 SCHEMAS["schemas.py"]
 AUDIT["audit_log.py"]
+API_SCHEMAS["api/schemas.py"]
 end
 subgraph "Agents"
 MED_AGENT["medication_agent.py"]
+end
+subgraph "Frontend"
+FRONTEND_SCHEMA["ui/lib/api.ts"]
 end
 subgraph "Data"
 FIXTURES["medications.json"]
@@ -61,6 +76,7 @@ MT --> SCHEMAS
 MT --> AUDIT
 MT --> RETRY
 MT --> FIXTURES
+FRONTEND_SCHEMA --> API_SCHEMAS
 T_UNIT --> MT
 T_INTEG --> MED_AGENT
 ```
@@ -74,6 +90,8 @@ T_INTEG --> MED_AGENT
 - [medications.json:1-33](file://fixtures/medications.json#L1-L33)
 - [test_medication_agent.py:1-177](file://tests/test_medication_agent.py#L1-L177)
 - [test_refill_flow.py:1-82](file://tests/integration/test_refill_flow.py#L1-L82)
+- [api.ts:181-194](file://src/ui/lib/api.ts#L181-L194)
+- [schemas.py:260-274](file://src/api/schemas.py#L260-L274)
 
 **Section sources**
 - [medication_tools.py:1-208](file://src/tools/medication_tools.py#L1-L208)
@@ -84,6 +102,8 @@ T_INTEG --> MED_AGENT
 - [medications.json:1-33](file://fixtures/medications.json#L1-L33)
 - [test_medication_agent.py:1-177](file://tests/test_medication_agent.py#L1-L177)
 - [test_refill_flow.py:1-82](file://tests/integration/test_refill_flow.py#L1-L82)
+- [api.ts:181-194](file://src/ui/lib/api.ts#L181-L194)
+- [schemas.py:260-274](file://src/api/schemas.py#L260-L274)
 
 ## Core Components
 - check_refill_status(medication_id): Loads medication fixtures and computes refill eligibility by comparing days_remaining to refill_threshold. Returns a RefillStatus model containing medication_id, days_remaining, refill_eligible, and pharmacy_id. Raises ValueError if the medication is not found.
@@ -92,12 +112,16 @@ T_INTEG --> MED_AGENT
 
 These functions abstract external pharmacy services behind stable interfaces. Currently, they read from fixtures/medications.json and simulate API responses. The design supports replacing the simulation with a real MCP pharmacy integration without changing caller code.
 
+**Updated** Data model validation ensures consistent boolean types across the application stack, particularly for medication status fields like `active` in the MedicationOut schema.
+
 **Section sources**
 - [medication_tools.py:34-63](file://src/tools/medication_tools.py#L34-L63)
 - [medication_tools.py:65-153](file://src/tools/medication_tools.py#L65-L153)
 - [medication_tools.py:155-208](file://src/tools/medication_tools.py#L155-L208)
 - [medications.json:1-33](file://fixtures/medications.json#L1-L33)
 - [schemas.py:73-94](file://src/models/schemas.py#L73-L94)
+- [schemas.py:260-274](file://src/api/schemas.py#L260-L274)
+- [api.ts:181-194](file://src/ui/lib/api.ts#L181-L194)
 
 ## Architecture Overview
 The medication tools are invoked by the Medication Agent, which orchestrates refill checks, ordering with retry, and adherence detection. Audit logging is integrated into order_refill to ensure every action has a complete trace.
@@ -109,6 +133,7 @@ participant Tool as "medication_tools"
 participant Retry as "with_retry"
 participant Audit as "audit_log"
 participant Fixtures as "medications.json"
+participant Frontend as "UI Schema"
 Agent->>Tool : check_refill_status(medication_id)
 Tool->>Fixtures : load medications
 Fixtures-->>Tool : medication record
@@ -131,6 +156,7 @@ Agent-->>Agent : skip refill
 end
 Agent->>Tool : detect_adherence_pattern(medication_id)
 Tool-->>Agent : AdherencePattern(deviation_flag, severity)
+Note over Frontend : MedicationOut.active field validated as boolean
 ```
 
 **Diagram sources**
@@ -139,6 +165,7 @@ Tool-->>Agent : AdherencePattern(deviation_flag, severity)
 - [retry.py:22-70](file://src/tools/retry.py#L22-L70)
 - [audit_log.py:81-131](file://src/models/audit_log.py#L81-L131)
 - [medications.json:1-33](file://fixtures/medications.json#L1-L33)
+- [api.ts:181-194](file://src/ui/lib/api.ts#L181-L194)
 
 ## Detailed Component Analysis
 
@@ -283,6 +310,31 @@ Agent-->>Supervisor : Result with actions_taken, escalation flags
 - [medication_agent.py:23-189](file://src/agents/medication_agent.py#L23-L189)
 - [retry.py:22-70](file://src/tools/retry.py#L22-L70)
 
+### Data Model Validation and Type Safety
+**New Section** - Enhanced data model validation ensures type consistency across the application stack.
+
+The MedicationOut schema in both backend and frontend enforces strict type validation:
+- Backend Pydantic model defines `active: bool` for medication status
+- Frontend Zod schema validates `active: z.boolean().optional()` 
+- This correction from `z.number().optional()` to `z.boolean().optional()` ensures proper boolean representation
+
+```mermaid
+flowchart LR
+Backend["Backend Pydantic Model"] --> API["REST API Response"]
+API --> Frontend["Frontend Zod Schema"]
+Backend -.-> TypeCheck["Type Validation"]
+Frontend -.-> TypeCheck
+TypeCheck --> Consistent["Consistent Boolean Types"]
+```
+
+**Diagram sources**
+- [schemas.py:260-274](file://src/api/schemas.py#L260-L274)
+- [api.ts:181-194](file://src/ui/lib/api.ts#L181-L194)
+
+**Section sources**
+- [schemas.py:260-274](file://src/api/schemas.py#L260-L274)
+- [api.ts:181-194](file://src/ui/lib/api.ts#L181-L194)
+
 ## Dependency Analysis
 - medication_tools depends on:
   - schemas for structured return types (RefillStatus, RefillOrder, AdherencePattern).
@@ -306,6 +358,7 @@ MED_TOOLS --> RETRY["retry.py"]
 MED_TOOLS --> FIXTURES["medications.json"]
 MED_AGENT["medication_agent.py"] --> MED_TOOLS
 MED_AGENT --> RETRY
+API_SCHEMAS["api/schemas.py"] --> FRONTEND_SCHEMA["ui/lib/api.ts"]
 ```
 
 **Diagram sources**
@@ -315,6 +368,8 @@ MED_AGENT --> RETRY
 - [audit_log.py:1-167](file://src/models/audit_log.py#L1-L167)
 - [retry.py:1-70](file://src/tools/retry.py#L1-L70)
 - [medications.json:1-33](file://fixtures/medications.json#L1-L33)
+- [schemas.py:260-274](file://src/api/schemas.py#L260-L274)
+- [api.ts:181-194](file://src/ui/lib/api.ts#L181-L194)
 
 **Section sources**
 - [medication_tools.py:1-208](file://src/tools/medication_tools.py#L1-L208)
@@ -323,14 +378,15 @@ MED_AGENT --> RETRY
 - [audit_log.py:1-167](file://src/models/audit_log.py#L1-L167)
 - [retry.py:1-70](file://src/tools/retry.py#L1-L70)
 - [medications.json:1-33](file://fixtures/medications.json#L1-L33)
+- [schemas.py:260-274](file://src/api/schemas.py#L260-L274)
+- [api.ts:181-194](file://src/ui/lib/api.ts#L181-L194)
 
 ## Performance Considerations
 - Fixture loading: Each tool call loads fixtures from disk. Consider caching the loaded list per process to avoid repeated I/O.
 - Retry strategy: with_retry uses exponential backoff (1s, 2s, 4s) across 3 attempts. This mitigates transient failures but adds latency; tune base_delay and max_attempts if needed.
 - Audit logging: SQLite writes are append-only and protected by triggers. Ensure database initialization occurs once per process to avoid overhead.
 - Asynchronous operations: order_refill is async; ensure callers use async contexts to avoid blocking.
-
-[No sources needed since this section provides general guidance]
+- **Updated** Schema validation: Proper boolean type validation prevents runtime errors and improves performance by catching type mismatches early.
 
 ## Troubleshooting Guide
 Common issues and resolutions:
@@ -346,6 +402,9 @@ Common issues and resolutions:
 - Retry exhaustion:
   - Symptoms: RetryExhausted raised by with_retry; agent sets escalation_required=True and escalation_level="alert".
   - Resolution: Investigate persistent failures; escalate to human review.
+- **Updated** Type validation errors:
+  - Symptoms: Frontend schema validation fails for medication data.
+  - Resolution: Ensure backend returns proper boolean types for active fields; verify schema alignment between backend and frontend.
 
 **Section sources**
 - [medication_tools.py:34-63](file://src/tools/medication_tools.py#L34-L63)
@@ -353,6 +412,7 @@ Common issues and resolutions:
 - [medication_agent.py:23-134](file://src/agents/medication_agent.py#L23-L134)
 - [retry.py:14-70](file://src/tools/retry.py#L14-L70)
 - [test_medication_agent.py:141-177](file://tests/test_medication_agent.py#L141-L177)
+- [api.ts:181-194](file://src/ui/lib/api.ts#L181-L194)
 
 ## Security and Privacy Considerations
 - Authentication:
@@ -366,10 +426,12 @@ Common issues and resolutions:
   - Audit events are append-only with SQLite triggers preventing updates/deletes; preserve integrity for compliance and auditing.
 - Testing with fixtures:
   - Fixture data should not contain real PHI; use synthetic identifiers and values for development and tests.
-
-[No sources needed since this section provides general guidance]
+- **Updated** Type safety and validation:
+  - Strict boolean type validation prevents injection attacks through malformed data.
+  - Schema validation at API boundaries ensures data integrity and prevents type confusion vulnerabilities.
+  - Frontend Zod schemas provide client-side validation for better user experience and security.
 
 ## Conclusion
-CareBridge’s medication tools provide a robust abstraction over pharmacy services, enabling refill monitoring, ordering with comprehensive audit trails, and adherence analysis. The current fixture-based approach supports rapid development and testing, while the architecture facilitates a seamless transition to a real MCP pharmacy integration. Standardized interfaces, immutable audit logging, and retry mechanisms ensure reliability, observability, and maintainability.
+CareBridge's medication tools provide a robust abstraction over pharmacy services, enabling refill monitoring, ordering with comprehensive audit trails, and adherence analysis. The current fixture-based approach supports rapid development and testing, while the architecture facilitates a seamless transition to a real MCP pharmacy integration. Standardized interfaces, immutable audit logging, and retry mechanisms ensure reliability, observability, and maintainability.
 
-[No sources needed since this section summarizes without analyzing specific files]
+**Updated** Enhanced data model validation with proper boolean type handling ensures consistency across the application stack, improving both reliability and security. The correction from numeric to boolean types for medication status fields demonstrates the importance of strict type validation in healthcare applications where data accuracy is critical.

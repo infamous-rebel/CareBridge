@@ -114,8 +114,8 @@ class Settings(BaseSettings):
         default="auth.db",
         validation_alias=AliasChoices("AUTH_DB_PATH",),
     )
-    audit_db_path: Optional[str] = Field(
-        default=None,
+    audit_db_path: str = Field(
+        default="audit.db",
         validation_alias=AliasChoices("AUDIT_DB_PATH",),
     )
 

@@ -15,6 +15,13 @@
 - [SPEC.md](file://SPEC.md)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Updated get_calendar function behavior documentation to reflect new empty list return instead of ValueError
+- Enhanced error handling and logging sections to document improved edge case visibility
+- Updated troubleshooting guide with new error handling patterns
+- Revised agent behavior documentation to reflect graceful handling of empty appointment lists
+
 ## Table of Contents
 1. Introduction
 2. Project Structure
@@ -28,7 +35,7 @@
 10. Appendices
 
 ## Introduction
-This document explains CareBridge’s appointment tools and how they integrate with calendar services to support scheduling, reminders, and provider coordination. The tools abstract external calendar providers (such as Google Calendar) behind standardized interfaces, enabling consistent behavior for retrieval, creation, and preparation workflows. They also enforce auditability, retry policies, and escalation rules across the system.
+This document explains CareBridge's appointment tools and how they integrate with calendar services to support scheduling, reminders, and provider coordination. The tools abstract external calendar providers (such as Google Calendar) behind standardized interfaces, enabling consistent behavior for retrieval, creation, and preparation workflows. They also enforce auditability, retry policies, and escalation rules across the system.
 
 The appointment lifecycle is tracked from creation through completion, including status tracking via audit events and conflict detection via time-window checks. The documentation covers:
 - Scheduling workflows and reminder automation patterns
@@ -76,24 +83,24 @@ TST --> AT
 ```
 
 **Diagram sources**
-- [appointment_agent.py:1-173](file://src/agents/appointment_agent.py#L1-L173)
+- [appointment_agent.py:1-273](file://src/agents/appointment_agent.py#L1-L273)
 - [appointment_tools.py:1-242](file://src/tools/appointment_tools.py#L1-L242)
 - [schemas.py:1-150](file://src/models/schemas.py#L1-L150)
 - [audit_log.py:1-167](file://src/models/audit_log.py#L1-L167)
 - [escalation_logic.py:1-71](file://src/models/escalation_logic.py#L1-L71)
 - [retry.py:1-70](file://src/tools/retry.py#L1-L70)
 - [appointments.json:1-33](file://fixtures/appointments.json#L1-L33)
-- [test_appointment_agent.py:1-127](file://tests/test_appointment_agent.py#L1-L127)
+- [test_appointment_agent.py:1-130](file://tests/test_appointment_agent.py#L1-L130)
 
 **Section sources**
-- [appointment_agent.py:1-173](file://src/agents/appointment_agent.py#L1-L173)
+- [appointment_agent.py:1-273](file://src/agents/appointment_agent.py#L1-L273)
 - [appointment_tools.py:1-242](file://src/tools/appointment_tools.py#L1-L242)
 - [schemas.py:1-150](file://src/models/schemas.py#L1-L150)
 - [audit_log.py:1-167](file://src/models/audit_log.py#L1-L167)
 - [escalation_logic.py:1-71](file://src/models/escalation_logic.py#L1-L71)
 - [retry.py:1-70](file://src/tools/retry.py#L1-L70)
 - [appointments.json:1-33](file://fixtures/appointments.json#L1-L33)
-- [test_appointment_agent.py:1-127](file://tests/test_appointment_agent.py#L1-L127)
+- [test_appointment_agent.py:1-130](file://tests/test_appointment_agent.py#L1-L130)
 
 ## Core Components
 - Appointment Tools: Provide calendar access, scheduling, and checklist delivery using fixtures as a mock backend. They wrap external calls with retries and write immutable audit events before and after actions.
@@ -104,18 +111,18 @@ TST --> AT
 - Audit Log: Immutable SQLite-backed event store ensuring every action is recorded with rationale and outcome.
 
 Key responsibilities:
-- get_calendar: Retrieve upcoming appointments within a horizon for a care recipient.
+- get_calendar: Retrieve upcoming appointments within a horizon for a care recipient. **Updated**: Now returns empty list instead of raising ValueError when no appointments found.
 - schedule_appointment: Create an appointment with a provider, with audit and retry.
 - send_prep_checklist: Deliver preparation instructions for upcoming appointments.
 - check_upcoming_appointments: Identify appointments needing attention based on time windows.
 - handle_appointment_event: End-to-end processing of appointment-related events.
 
 **Section sources**
-- [appointment_tools.py:25-80](file://src/tools/appointment_tools.py#L25-L80)
+- [appointment_tools.py:39-80](file://src/tools/appointment_tools.py#L39-L80)
 - [appointment_tools.py:117-200](file://src/tools/appointment_tools.py#L117-L200)
 - [appointment_tools.py:203-242](file://src/tools/appointment_tools.py#L203-L242)
-- [appointment_agent.py:25-71](file://src/agents/appointment_agent.py#L25-L71)
-- [appointment_agent.py:74-173](file://src/agents/appointment_agent.py#L74-L173)
+- [appointment_agent.py:48-94](file://src/agents/appointment_agent.py#L48-L94)
+- [appointment_agent.py:97-195](file://src/agents/appointment_agent.py#L97-L195)
 - [schemas.py:23-32](file://src/models/schemas.py#L23-L32)
 - [schemas.py:111-116](file://src/models/schemas.py#L111-L116)
 - [audit_log.py:81-130](file://src/models/audit_log.py#L81-L130)
@@ -140,8 +147,13 @@ participant Fixture as "Appointments Fixture"
 Client->>Agent : "handle_appointment_event(event)"
 Agent->>Tools : "get_calendar(care_recipient_id, horizon_days=7)"
 Tools->>Fixture : "Load and filter appointments"
+alt No appointments found
+Fixture-->>Tools : "Empty list"
+Tools-->>Agent : "[]"
+else Appointments found
 Fixture-->>Tools : "Filtered list"
 Tools-->>Agent : "List[Appointment]"
+end
 Agent->>Agent : "Evaluate time windows (48h / 7d)"
 alt Within 48 hours
 Agent->>Tools : "send_prep_checklist(appointment_id)"
@@ -154,7 +166,7 @@ Agent-->>Client : "Structured result"
 ```
 
 **Diagram sources**
-- [appointment_agent.py:74-173](file://src/agents/appointment_agent.py#L74-L173)
+- [appointment_agent.py:97-195](file://src/agents/appointment_agent.py#L97-L195)
 - [appointment_tools.py:39-80](file://src/tools/appointment_tools.py#L39-L80)
 - [appointment_tools.py:203-242](file://src/tools/appointment_tools.py#L203-L242)
 - [appointments.json:1-33](file://fixtures/appointments.json#L1-L33)
@@ -169,6 +181,7 @@ Responsibilities:
 
 Implementation highlights:
 - Timezone-aware datetime handling ensures correct comparisons.
+- **Updated**: Enhanced error handling with logging for edge cases - returns empty list instead of raising exceptions when no appointments found.
 - Audit-first pattern writes pending outcomes before execution and final outcomes after success/failure.
 - Retry utility wraps external calls with exponential backoff.
 
@@ -190,7 +203,7 @@ AuditFailure --> RaiseError["Raise RuntimeError"]
 - [audit_log.py:81-130](file://src/models/audit_log.py#L81-L130)
 
 **Section sources**
-- [appointment_tools.py:25-80](file://src/tools/appointment_tools.py#L25-L80)
+- [appointment_tools.py:39-80](file://src/tools/appointment_tools.py#L39-L80)
 - [appointment_tools.py:117-200](file://src/tools/appointment_tools.py#L117-L200)
 - [appointment_tools.py:203-242](file://src/tools/appointment_tools.py#L203-L242)
 - [retry.py:22-69](file://src/tools/retry.py#L22-L69)
@@ -205,12 +218,15 @@ Responsibilities:
 
 Behavior rules:
 - Uses UTC-aware datetimes for comparisons.
+- **Updated**: Gracefully handles empty appointment lists without raising exceptions.
 - Returns actionable summaries including checklists sent and transport flags.
 
 ```mermaid
 flowchart TD
 Entry(["handle_appointment_event"]) --> GetCal["get_calendar(horizon=7)"]
-GetCal --> Loop{"For each appointment"}
+GetCal --> CheckEmpty{"Empty list?"}
+CheckEmpty --> |Yes| NoActions["No actions needed"]
+CheckEmpty --> |No| Loop{"For each appointment"}
 Loop --> TimeCalc["Compute time_until now"]
 TimeCalc --> Check48{"Within 48h?"}
 Check48 --> |Yes| SendChecklist["send_prep_checklist"]
@@ -220,14 +236,15 @@ NextEval --> Check7d{"Within 7d AND transportation_needed?"}
 Check7d --> |Yes| FlagTransport["Set logistics_coordination_needed"]
 Check7d --> |No| Done["Done"]
 FlagTransport --> Done
+NoActions --> Done
 ```
 
 **Diagram sources**
-- [appointment_agent.py:74-173](file://src/agents/appointment_agent.py#L74-L173)
+- [appointment_agent.py:97-195](file://src/agents/appointment_agent.py#L97-L195)
 
 **Section sources**
-- [appointment_agent.py:25-71](file://src/agents/appointment_agent.py#L25-L71)
-- [appointment_agent.py:74-173](file://src/agents/appointment_agent.py#L74-L173)
+- [appointment_agent.py:48-94](file://src/agents/appointment_agent.py#L48-L94)
+- [appointment_agent.py:97-195](file://src/agents/appointment_agent.py#L97-L195)
 
 ### Data Models and Schemas
 - Appointment: Represents provider details, specialty, scheduled time, location, preparation requirements, transportation needs, and care recipient association.
@@ -258,7 +275,7 @@ These models ensure consistent data exchange between agents and tools.
 - [escalation_logic.py:13-70](file://src/models/escalation_logic.py#L13-L70)
 
 ### Audit Trail
-- Every action writes a “before” event with outcome=pending prior to execution.
+- Every action writes a "before" event with outcome=pending prior to execution.
 - A follow-up event records the final outcome (success/failure), preserving immutability via SQLite triggers.
 
 **Section sources**
@@ -285,23 +302,23 @@ TST --> AT
 ```
 
 **Diagram sources**
-- [appointment_agent.py:1-173](file://src/agents/appointment_agent.py#L1-L173)
+- [appointment_agent.py:1-273](file://src/agents/appointment_agent.py#L1-L273)
 - [appointment_tools.py:1-242](file://src/tools/appointment_tools.py#L1-L242)
 - [retry.py:1-70](file://src/tools/retry.py#L1-L70)
 - [audit_log.py:1-167](file://src/models/audit_log.py#L1-L167)
 - [schemas.py:1-150](file://src/models/schemas.py#L1-L150)
 - [appointments.json:1-33](file://fixtures/appointments.json#L1-L33)
-- [test_appointment_agent.py:1-127](file://tests/test_appointment_agent.py#L1-L127)
+- [test_appointment_agent.py:1-130](file://tests/test_appointment_agent.py#L1-L130)
 - [escalation_logic.py:1-71](file://src/models/escalation_logic.py#L1-L71)
 
 **Section sources**
-- [appointment_agent.py:1-173](file://src/agents/appointment_agent.py#L1-L173)
+- [appointment_agent.py:1-273](file://src/agents/appointment_agent.py#L1-L273)
 - [appointment_tools.py:1-242](file://src/tools/appointment_tools.py#L1-L242)
 - [retry.py:1-70](file://src/tools/retry.py#L1-L70)
 - [audit_log.py:1-167](file://src/models/audit_log.py#L1-L167)
 - [schemas.py:1-150](file://src/models/schemas.py#L1-L150)
 - [appointments.json:1-33](file://fixtures/appointments.json#L1-L33)
-- [test_appointment_agent.py:1-127](file://tests/test_appointment_agent.py#L1-L127)
+- [test_appointment_agent.py:1-130](file://tests/test_appointment_agent.py#L1-L130)
 - [escalation_logic.py:1-71](file://src/models/escalation_logic.py#L1-L71)
 
 ## Performance Considerations
@@ -309,10 +326,11 @@ TST --> AT
 - Retry policy limits external call latency; tune base_delay and max_attempts if integrating real APIs with different SLAs.
 - Audit log writes are synchronous; batch or async flush may be considered for high-throughput scenarios.
 - Avoid unnecessary timezone conversions; maintain UTC throughout to minimize overhead.
+- **Updated**: Empty list returns reduce exception handling overhead and improve performance for unknown recipients.
 
 ## Troubleshooting Guide
 Common issues and resolutions:
-- No appointments found: Ensure care_recipient_id exists in fixtures and that the horizon includes the target dates.
+- **Updated**: No appointments found: The function now returns an empty list instead of raising ValueError. Check logs for "no appointments found" messages and verify care_recipient_id exists in fixtures.
 - Invalid appointment_id for checklist: Verify the appointment_id matches fixture records.
 - Calendar API failures: The tool raises a RuntimeError after retries; inspect logs and audit trail for failure reasons.
 - Unknown recipient: The agent returns a structured result indicating no appointments; verify IDs and fixture data.
@@ -321,17 +339,19 @@ Operational checks:
 - Confirm audit database initialization and immutability triggers are active.
 - Validate retry behavior by simulating transient failures in tests.
 - Use the demo scenario to exercise end-to-end flows and review audit summaries.
+- **Updated**: Monitor logging output for enhanced visibility into edge cases and empty result scenarios.
 
 **Section sources**
-- [appointment_tools.py:55-80](file://src/tools/appointment_tools.py#L55-L80)
+- [appointment_tools.py:60-65](file://src/tools/appointment_tools.py#L60-L65)
 - [appointment_tools.py:218-242](file://src/tools/appointment_tools.py#L218-L242)
-- [appointment_agent.py:106-123](file://src/agents/appointment_agent.py#L106-L123)
+- [appointment_agent.py:135-145](file://src/agents/appointment_agent.py#L135-L145)
 - [audit_log.py:19-78](file://src/models/audit_log.py#L19-L78)
-- [test_appointment_agent.py:18-79](file://tests/test_appointment_agent.py#L18-L79)
+- [test_appointment_agent.py:28-32](file://tests/test_appointment_agent.py#L28-L32)
+- [test_appointment_agent.py:109-118](file://tests/test_appointment_agent.py#L109-L118)
 - [main.py:143-177](file://main.py#L143-L177)
 
 ## Conclusion
-CareBridge’s appointment tools provide a robust foundation for scheduling, reminders, and provider coordination. By abstracting calendar services behind standardized interfaces, enforcing auditability, and applying deterministic escalation and retry policies, the system ensures reliable operation even under external service variability. The agent-layer workflows enable proactive care coordination, while fixtures and tests facilitate rapid development and validation.
+CareBridge's appointment tools provide a robust foundation for scheduling, reminders, and provider coordination. By abstracting calendar services behind standardized interfaces, enforcing auditability, and applying deterministic escalation and retry policies, the system ensures reliable operation even under external service variability. The recent enhancement to return empty lists instead of raising exceptions improves resilience and simplifies error handling. The agent-layer workflows enable proactive care coordination, while fixtures and tests facilitate rapid development and validation.
 
 ## Appendices
 
@@ -343,7 +363,7 @@ CareBridge’s appointment tools provide a robust foundation for scheduling, rem
 
 **Section sources**
 - [appointment_tools.py:117-200](file://src/tools/appointment_tools.py#L117-L200)
-- [appointment_agent.py:126-160](file://src/agents/appointment_agent.py#L126-L160)
+- [appointment_agent.py:157-182](file://src/agents/appointment_agent.py#L157-L182)
 - [audit_log.py:81-130](file://src/models/audit_log.py#L81-L130)
 
 ### Integration with External Calendar Providers
@@ -368,19 +388,23 @@ CareBridge’s appointment tools provide a robust foundation for scheduling, rem
 
 ### Testing Appointment Tool Integrations
 - Unit tests cover happy paths and failure scenarios for get_calendar, schedule_appointment, and send_prep_checklist.
+- **Updated**: Tests now verify that get_calendar returns empty lists for unknown recipients instead of raising exceptions.
 - Agent-level tests validate event processing and result structure.
 - Use temp_audit_db fixtures to isolate audit writes during tests.
 
 **Section sources**
-- [test_appointment_agent.py:18-79](file://tests/test_appointment_agent.py#L18-L79)
+- [test_appointment_agent.py:28-32](file://tests/test_appointment_agent.py#L28-L32)
+- [test_appointment_agent.py:109-118](file://tests/test_appointment_agent.py#L109-L118)
 - [test_appointment_agent.py:97-127](file://tests/test_appointment_agent.py#L97-L127)
 
 ### Handling Calendar Service Outages
 - Retry policy provides resilience for transient failures.
 - On exhaustion, raise RuntimeError and record failure in audit trail.
 - Fallback strategy per specification: log to audit and notify caregiver to schedule manually.
+- **Updated**: Enhanced logging provides better visibility into edge cases and empty result scenarios.
 
 **Section sources**
 - [retry.py:22-69](file://src/tools/retry.py#L22-L69)
 - [appointment_tools.py:183-200](file://src/tools/appointment_tools.py#L183-L200)
+- [appointment_tools.py:60-65](file://src/tools/appointment_tools.py#L60-L65)
 - [AGENTS.md:154-163](file://AGENTS.md#L154-L163)
