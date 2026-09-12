@@ -16,6 +16,13 @@
 - [AGENTS.md](file://AGENTS.md)
 </cite>
 
+## Update Summary
+**Changes Made**
+- Enhanced query_status method with LLM synthesis for sophisticated caregiver responses
+- Added comprehensive error handling and logging for LLM integration
+- Updated public API documentation to reflect new LLM-dependent functionality
+- Added new section documenting LLM synthesis workflow and fallback behavior
+
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Project Structure](#project-structure)
@@ -36,6 +43,7 @@ Key responsibilities:
 - Audit-first logging with immutable SQLite-backed audit trail
 - Public API methods: process_event(), query_status(), approve_pending_action()
 - Graceful degradation when Strands SDK is not available
+- **Enhanced**: LLM-powered status synthesis for sophisticated caregiver responses with deterministic fallback
 
 ## Project Structure
 The Supervisor lives under src/agents and coordinates with other agents under the same package. Shared models live under src/models, tools under src/tools, and fixtures under fixtures/. Tests validate behavior under tests/.
@@ -56,6 +64,7 @@ AL["Audit Log"]
 end
 subgraph "Tools"
 CT["Communication Tools"]
+LLM["LLM Integration"]
 end
 subgraph "Fixtures"
 DH["Delivery History"]
@@ -66,12 +75,13 @@ S --> L
 S --> C
 S --> E
 S --> AL
+S --> LLM
 C --> CT
 L --> DH
 ```
 
 **Diagram sources**
-- [supervisor_agent.py:1-641](file://src/agents/supervisor_agent.py#L1-L641)
+- [supervisor_agent.py:1-1276](file://src/agents/supervisor_agent.py#L1-L1276)
 - [escalation_logic.py:1-71](file://src/models/escalation_logic.py#L1-L71)
 - [audit_log.py:1-167](file://src/models/audit_log.py#L1-L167)
 - [communication_agent.py:1-163](file://src/agents/communication_agent.py#L1-L163)
@@ -79,7 +89,7 @@ L --> DH
 - [delivery_history.json:1-33](file://fixtures/delivery_history.json#L1-L33)
 
 **Section sources**
-- [supervisor_agent.py:1-641](file://src/agents/supervisor_agent.py#L1-L641)
+- [supervisor_agent.py:1-1276](file://src/agents/supervisor_agent.py#L1-L1276)
 - [AGENTS.md:1-207](file://AGENTS.md#L1-L207)
 
 ## Core Components
@@ -89,14 +99,16 @@ L --> DH
 - Audit Log: Immutable SQLite database with triggers preventing updates/deletes; write_audit_event and get_audit_events.
 - Specialized Agents: Medication, Appointment, Logistics, Communication — each owns specific tools and returns structured results.
 - Communication Tools: Messaging simulation with family preferences and status synthesis.
+- **Enhanced**: LLM Integration: Sophisticated natural language synthesis for caregiver queries with robust error handling.
 
 Public API surface:
 - process_event(event): Route, escalate, notify, audit, return ResolutionResult.
-- query_status(care_recipient_id, question): Synthesize status via Communication tools and log the query.
+- query_status(care_recipient_id, question): Synthesize status via LLM with deterministic fallback, log query, return natural language response.
 - approve_pending_action(action_id, approved): Human approval workflow with audit-first execution.
 
 **Section sources**
-- [supervisor_agent.py:285-430](file://src/agents/supervisor_agent.py#L285-L430)
+- [supervisor_agent.py:647-826](file://src/agents/supervisor_agent.py#L647-L826)
+- [supervisor_agent.py:836-931](file://src/agents/supervisor_agent.py#L836-L931)
 - [escalation_logic.py:13-71](file://src/models/escalation_logic.py#L13-L71)
 - [schemas.py:44-150](file://src/models/schemas.py#L44-L150)
 - [audit_log.py:19-167](file://src/models/audit_log.py#L19-L167)
@@ -111,6 +123,7 @@ participant Client as "Client"
 participant Supervisor as "Supervisor Agent"
 participant Specialist as "Specialized Agent"
 participant Comm as "Communication Agent"
+participant LLM as "LLM Service"
 participant Audit as "Audit Log"
 Client->>Supervisor : "process_event(CareEvent)"
 Supervisor->>Audit : "write_audit_event(outcome=pending)"
@@ -126,7 +139,7 @@ Supervisor-->>Client : "ResolutionResult"
 ```
 
 **Diagram sources**
-- [supervisor_agent.py:285-395](file://src/agents/supervisor_agent.py#L285-L395)
+- [supervisor_agent.py:647-826](file://src/agents/supervisor_agent.py#L647-L826)
 - [audit_log.py:81-131](file://src/models/audit_log.py#L81-L131)
 - [communication_agent.py:28-115](file://src/agents/communication_agent.py#L28-L115)
 
@@ -154,11 +167,11 @@ Result --> End(["Return to Supervisor"])
 ```
 
 **Diagram sources**
-- [supervisor_agent.py:259-279](file://src/agents/supervisor_agent.py#L259-L279)
+- [supervisor_agent.py:618-641](file://src/agents/supervisor_agent.py#L618-L641)
 - [schemas.py:56-62](file://src/models/schemas.py#L56-L62)
 
 **Section sources**
-- [supervisor_agent.py:259-279](file://src/agents/supervisor_agent.py#L259-L279)
+- [supervisor_agent.py:618-641](file://src/agents/supervisor_agent.py#L618-L641)
 - [schemas.py:56-62](file://src/models/schemas.py#L56-L62)
 
 ### Deterministic Escalation Decision-Making
@@ -190,15 +203,15 @@ Final --> |No| ReturnNone["Return escalation_required=False"]
 ```
 
 **Diagram sources**
-- [supervisor_agent.py:178-234](file://src/agents/supervisor_agent.py#L178-L234)
+- [supervisor_agent.py:333-389](file://src/agents/supervisor_agent.py#L333-L389)
 - [escalation_logic.py:13-71](file://src/models/escalation_logic.py#L13-L71)
 
 **Section sources**
-- [supervisor_agent.py:178-234](file://src/agents/supervisor_agent.py#L178-L234)
+- [supervisor_agent.py:333-389](file://src/agents/supervisor_agent.py#L333-L389)
 - [escalation_logic.py:13-71](file://src/models/escalation_logic.py#L13-L71)
 
 ### Audit-First Pattern Implementation
-Every action begins with a “before action” audit event with outcome="pending", written BEFORE execution. After execution, a follow-up event records the final outcome ("success", "failure", "escalated"). The audit database uses SQLite with triggers preventing UPDATE and DELETE, ensuring immutability.
+Every action begins with a "before action" audit event with outcome="pending", written BEFORE execution. After execution, a follow-up event records the final outcome ("success", "failure", "escalated"). The audit database uses SQLite with triggers preventing UPDATE and DELETE, ensuring immutability.
 
 Key behaviors:
 - process_event writes a pending event at start and a final outcome event after processing.
@@ -220,12 +233,12 @@ Note over Sup,Aud : "After Action"
 
 **Diagram sources**
 - [audit_log.py:19-131](file://src/models/audit_log.py#L19-L131)
-- [supervisor_agent.py:299-395](file://src/agents/supervisor_agent.py#L299-L395)
+- [supervisor_agent.py:670-826](file://src/agents/supervisor_agent.py#L670-L826)
 - [communication_tools.py:77-157](file://src/tools/communication_tools.py#L77-L157)
 
 **Section sources**
 - [audit_log.py:19-131](file://src/models/audit_log.py#L19-L131)
-- [supervisor_agent.py:299-395](file://src/agents/supervisor_agent.py#L299-L395)
+- [supervisor_agent.py:670-826](file://src/agents/supervisor_agent.py#L670-L826)
 - [communication_tools.py:77-157](file://src/tools/communication_tools.py#L77-L157)
 
 ### Public API Methods
@@ -259,20 +272,49 @@ Sup-->>Client : "ResolutionResult"
 ```
 
 **Diagram sources**
-- [supervisor_agent.py:285-395](file://src/agents/supervisor_agent.py#L285-L395)
+- [supervisor_agent.py:647-826](file://src/agents/supervisor_agent.py#L647-L826)
 - [audit_log.py:81-131](file://src/models/audit_log.py#L81-L131)
 
 **Section sources**
-- [supervisor_agent.py:285-395](file://src/agents/supervisor_agent.py#L285-L395)
+- [supervisor_agent.py:647-826](file://src/agents/supervisor_agent.py#L647-L826)
 
 #### query_status(care_recipient_id, question)
+**Updated** Enhanced with LLM synthesis capabilities while maintaining deterministic fallback behavior.
+
 - Ensures audit DB initialized
 - Calls synthesize_status from Communication tools to build a summary from recent audit events and pending actions
-- Writes an audit event recording the query
-- Returns synthesized status text
+- Writes an audit event recording the query with action_type="synthesize_status"
+- **New**: Attempts LLM synthesis using Strands Agent with system prompt guidance
+- **New**: Comprehensive error handling with graceful degradation to deterministic summary
+- **New**: Detailed logging for both successful LLM synthesis and fallback scenarios
+- Returns natural language response from LLM or deterministic summary as fallback
+
+```mermaid
+sequenceDiagram
+participant Client as "Client"
+participant Sup as "Supervisor"
+participant Comm as "Communication Tools"
+participant LLM as "LLM Service"
+participant Audit as "Audit Log"
+Client->>Sup : "query_status(id, question)"
+Sup->>Comm : "synthesize_status(id)"
+Comm-->>Sup : "StatusSummary"
+Sup->>Audit : "write audit event"
+Sup->>LLM : "try LLM synthesis"
+alt "LLM available and successful"
+LLM-->>Sup : "natural language answer"
+Sup-->>Client : "LLM response"
+else "LLM unavailable or failed"
+Sup-->>Client : "deterministic summary"
+end
+```
+
+**Diagram sources**
+- [supervisor_agent.py:836-931](file://src/agents/supervisor_agent.py#L836-L931)
+- [communication_tools.py:160-231](file://src/tools/communication_tools.py#L160-L231)
 
 **Section sources**
-- [supervisor_agent.py:398-430](file://src/agents/supervisor_agent.py#L398-L430)
+- [supervisor_agent.py:836-931](file://src/agents/supervisor_agent.py#L836-L931)
 - [communication_tools.py:160-231](file://src/tools/communication_tools.py#L160-L231)
 
 #### approve_pending_action(action_id, approved)
@@ -304,11 +346,47 @@ Sup-->>Human : "Done"
 ```
 
 **Diagram sources**
-- [supervisor_agent.py:432-593](file://src/agents/supervisor_agent.py#L432-L593)
+- [supervisor_agent.py:934-1049](file://src/agents/supervisor_agent.py#L934-L1049)
 - [audit_log.py:81-131](file://src/models/audit_log.py#L81-L131)
 
 **Section sources**
-- [supervisor_agent.py:432-593](file://src/agents/supervisor_agent.py#L432-L593)
+- [supervisor_agent.py:934-1049](file://src/agents/supervisor_agent.py#L934-L1049)
+
+### LLM Synthesis Workflow for Status Queries
+**New Section** The enhanced query_status method implements sophisticated LLM-powered status synthesis with robust error handling.
+
+The workflow consists of several key phases:
+
+1. **Data Preparation**: Fetches recent audit events and builds a structured prompt containing the caregiver's question, recent events, and current state summary.
+
+2. **LLM Integration**: Uses Strands Agent with a specialized system prompt that instructs the model to be concise, warm, factual, and avoid clinical advice.
+
+3. **Error Handling**: Implements comprehensive exception handling with two-tier fallback:
+   - RuntimeError (no LLM configured): Falls back to deterministic summary
+   - General exceptions: Logs warning and falls back to deterministic summary
+
+4. **Logging**: Provides detailed logging for both successful synthesis and fallback scenarios, including provider information.
+
+5. **Audit Trail**: Records exactly one audit event per query with action_type="synthesize_status".
+
+```mermaid
+flowchart TD
+Start([Query Request]) --> Prepare[Prepare Prompt Data]
+Prepare --> TryLLM{Try LLM Synthesis}
+TryLLM --> |Success| ReturnLLM[Return LLM Response]
+TryLLM --> |RuntimeError| FallbackInfo[Use Deterministic Summary]
+TryLLM --> |Exception| FallbackWarning[Log Warning + Use Fallback]
+FallbackInfo --> ReturnFallback[Return Summary]
+FallbackWarning --> ReturnFallback
+ReturnLLM --> End([Complete])
+ReturnFallback --> End
+```
+
+**Diagram sources**
+- [supervisor_agent.py:836-931](file://src/agents/supervisor_agent.py#L836-L931)
+
+**Section sources**
+- [supervisor_agent.py:829-931](file://src/agents/supervisor_agent.py#L829-L931)
 
 ### Strands Agents SDK Integration with Graceful Degradation
 - create_supervisor_agent() attempts to import strands and BedrockModel, then builds an Agent with the four specialized handlers as tools.
@@ -329,7 +407,7 @@ Sup-->>Human : "Done"
 
 **Section sources**
 - [medication_agent.py:23-134](file://src/agents/medication_agent.py#L23-L134)
-- [supervisor_agent.py:259-279](file://src/agents/supervisor_agent.py#L259-L279)
+- [supervisor_agent.py:618-641](file://src/agents/supervisor_agent.py#L618-L641)
 - [test_supervisor.py:67-78](file://tests/test_supervisor.py#L67-L78)
 
 #### Example: Delivery Failed Event Flow
@@ -362,20 +440,34 @@ Sup-->>Human : "Done"
 
 **Section sources**
 - [medication_agent.py:101-134](file://src/agents/medication_agent.py#L101-L134)
-- [supervisor_agent.py:259-279](file://src/agents/supervisor_agent.py#L259-L279)
+- [supervisor_agent.py:618-641](file://src/agents/supervisor_agent.py#L618-L641)
+
+#### Example: Enhanced Status Query with LLM Synthesis
+**New Example** Demonstrates the enhanced query_status functionality:
+
+- Caregiver asks: "What happened with John's medication refills this week?"
+- System fetches recent audit events and builds structured prompt
+- LLM synthesizes natural language response: "John had two medication refills processed this week. One was successfully ordered on Monday, while the other requires your attention due to a pharmacy delay."
+- If LLM unavailable, falls back to: "Care recipient cr-001: 5 recent event(s). Last action: order_refill (success) at 2024-01-15T10:30:00Z."
+
+**Section sources**
+- [supervisor_agent.py:836-931](file://src/agents/supervisor_agent.py#L836-L931)
+- [test_supervisor.py:125-130](file://tests/test_supervisor.py#L125-L130)
 
 ### Error Handling Patterns
 - Routing failures: Supervisor catches exceptions during routing, writes failure audit event, returns ResolutionResult with resolved=False and error description.
 - Communication failures: Family alert dispatch errors are caught, logged, and included in actions_taken; never silently fail.
 - Retry exhaustion: Tools like send_alert and order_refill use with_retry; RetryExhausted triggers escalation and audit logging.
 - Approval validation: approve_pending_action raises ValueError for already resolved, nonexistent, or non-pending actions.
+- **Enhanced**: LLM integration errors: Comprehensive exception handling with graceful degradation to deterministic summaries, detailed logging for both configuration errors and runtime failures.
 
 **Section sources**
-- [supervisor_agent.py:319-340](file://src/agents/supervisor_agent.py#L319-L340)
-- [supervisor_agent.py:347-366](file://src/agents/supervisor_agent.py#L347-L366)
+- [supervisor_agent.py:700-736](file://src/agents/supervisor_agent.py#L700-L736)
+- [supervisor_agent.py:770-779](file://src/agents/supervisor_agent.py#L770-L779)
+- [supervisor_agent.py:921-929](file://src/agents/supervisor_agent.py#L921-L929)
+- [supervisor_agent.py:952-963](file://src/agents/supervisor_agent.py#L952-L963)
 - [communication_agent.py:55-115](file://src/agents/communication_agent.py#L55-L115)
 - [communication_tools.py:142-157](file://src/tools/communication_tools.py#L142-L157)
-- [supervisor_agent.py:450-462](file://src/agents/supervisor_agent.py#L450-L462)
 
 ### Strict Boundaries and Specialized Agent Requirement
 - The Supervisor NEVER calls external APIs directly; all operations go through specialized agents and tools.
@@ -386,7 +478,7 @@ Sup-->>Human : "Done"
 **Section sources**
 - [AGENTS.md:8-21](file://AGENTS.md#L8-L21)
 - [AGENTS.md:25-49](file://AGENTS.md#L25-L49)
-- [supervisor_agent.py:1-15](file://src/agents/supervisor_agent.py#L1-L15)
+- [supervisor_agent.py:1-34](file://src/agents/supervisor_agent.py#L1-L34)
 
 ## Dependency Analysis
 The Supervisor depends on:
@@ -395,6 +487,7 @@ The Supervisor depends on:
 - Audit Log for immutable event storage
 - Specialized Agents for domain-specific handling
 - Communication Tools for messaging and status synthesis
+- **Enhanced**: LLM Integration for sophisticated natural language synthesis
 
 ```mermaid
 graph LR
@@ -405,15 +498,16 @@ Sup --> Med["Medication Agent"]
 Sup --> Appt["Appointment Agent"]
 Sup --> Log["Logistics Agent"]
 Sup --> Comm["Communication Agent"]
+Sup --> LLM["LLM Integration"]
 Comm --> CT["Communication Tools"]
 ```
 
 **Diagram sources**
-- [supervisor_agent.py:21-40](file://src/agents/supervisor_agent.py#L21-L40)
+- [supervisor_agent.py:42-78](file://src/agents/supervisor_agent.py#L42-L78)
 - [communication_agent.py:10-24](file://src/agents/communication_agent.py#L10-L24)
 
 **Section sources**
-- [supervisor_agent.py:21-40](file://src/agents/supervisor_agent.py#L21-L40)
+- [supervisor_agent.py:42-78](file://src/agents/supervisor_agent.py#L42-L78)
 - [communication_agent.py:10-24](file://src/agents/communication_agent.py#L10-L24)
 
 ## Performance Considerations
@@ -421,8 +515,7 @@ Comm --> CT["Communication Tools"]
 - Audit logging uses lightweight SQLite with indexes on timestamp, correlation_id, and care_recipient_id for efficient queries.
 - Retry logic uses exponential backoff to reduce transient failures without overwhelming external systems.
 - Communication batching for info-level events reduces noise and improves throughput.
-
-[No sources needed since this section provides general guidance]
+- **Enhanced**: LLM synthesis is optional and gracefully degrades to deterministic responses when unavailable, ensuring consistent performance regardless of LLM availability.
 
 ## Troubleshooting Guide
 Common issues and resolutions:
@@ -430,14 +523,14 @@ Common issues and resolutions:
 - Escalation not triggered: Verify classify_action mapping and ensure agent_result contains correct escalation flags. Confirm emergency triggers in payload.
 - Approval workflow stuck: Ensure pending action exists and is in "pending" state. Check audit trail for human decision events.
 - Communication failures: Inspect logs/messages.log and audit events for send_alert outcomes. Validate family members fixture and notification preferences.
+- **Enhanced**: LLM synthesis issues: Check for proper LLM provider configuration, verify API keys and credentials, review logs for synthesis failures, and confirm fallback behavior is working correctly.
 
 **Section sources**
-- [supervisor_agent.py:319-340](file://src/agents/supervisor_agent.py#L319-L340)
-- [supervisor_agent.py:450-462](file://src/agents/supervisor_agent.py#L450-L462)
+- [supervisor_agent.py:700-736](file://src/agents/supervisor_agent.py#L700-L736)
+- [supervisor_agent.py:921-929](file://src/agents/supervisor_agent.py#L921-L929)
+- [supervisor_agent.py:952-963](file://src/agents/supervisor_agent.py#L952-L963)
 - [communication_tools.py:142-157](file://src/tools/communication_tools.py#L142-L157)
 - [test_supervisor.py:223-275](file://tests/test_supervisor.py#L223-L275)
 
 ## Conclusion
-The CareBridge Supervisor Agent provides a robust, deterministic orchestration layer for care coordination events. It enforces strict boundaries, ensures audit-first compliance, and offers clear public APIs for event processing, status querying, and human approval workflows. Its design prioritizes safety, traceability, and reliability, with graceful fallbacks when advanced integrations are unavailable.
-
-[No sources needed since this section summarizes without analyzing specific files]
+The CareBridge Supervisor Agent provides a robust, deterministic orchestration layer for care coordination events. It enforces strict boundaries, ensures audit-first compliance, and offers clear public APIs for event processing, status querying, and human approval workflows. Its design prioritizes safety, traceability, and reliability, with graceful fallbacks when advanced integrations are unavailable. The enhanced LLM synthesis capabilities provide sophisticated caregiver responses while maintaining deterministic fallback behavior, ensuring the system remains reliable even when LLM services are unavailable.

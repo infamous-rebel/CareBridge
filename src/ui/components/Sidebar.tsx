@@ -47,7 +47,7 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 z-30 flex h-full w-60 flex-shrink-0 flex-col justify-between border-r border-sand bg-sidebar-bg select-none">
       <div>
         {/* Logo */}
-        <Link href="/" className="flex h-20 items-center gap-3 border-b border-sand px-6">
+        <Link href="/dashboard" className="flex h-20 items-center gap-3 border-b border-sand px-6">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-forest font-serif text-sm font-bold text-cream shadow-sm">
             CB
           </div>

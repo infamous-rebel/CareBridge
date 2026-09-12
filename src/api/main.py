@@ -62,6 +62,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     user_store.init_user_db()
     user_store.seed_demo_user(settings)
 
+    # Seed realistic demo audit events (idempotent, DEMO_MODE only).
+    from src.api.demo_seed import seed_demo_audit_events
+
+    seed_demo_audit_events()
+
     logger.info(
         "CareBridge API started (env=%s demo_mode=%s version=%s)",
         settings.environment,

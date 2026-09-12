@@ -29,10 +29,10 @@
 
 ## Update Summary
 **Changes Made**
-- Enhanced dashboard interface with integrated real-time chat replacing modal-based actions
-- Implemented improved navigation system with automatic modal opening via URL parameters
-- Added better multi-user support through dynamic care recipient identification using authenticated user context
-- Updated frontend architecture to support seamless user experience improvements
+- Updated Gemini model configuration from gemini-2.5-flash to gemini-3.6-flash across runtime defaults and API configuration
+- Enhanced LLM integration layer documentation to reflect new natural language processing capabilities
+- Updated model factory configuration with latest Gemini model version
+- Enhanced test coverage for new model configuration
 
 ## Table of Contents
 1. Introduction
@@ -238,7 +238,7 @@ ChatBar->>User : Display answer + timestamp
 ```
 
 **Diagram sources**
-- [src/ui/app/dashboard/page.tsx:130-157](file://src/ui/app/dashboard/page.tsx#L130-L157)
+- [src/ui/app/dashboard/page.tsx:130-157](file://src/ui/app/dashboard/page.tsx#L130-157)
 - [src/ui/lib/api.ts:489-500](file://src/ui/lib/api.ts#L489-L500)
 
 ### Improved Navigation System
@@ -357,7 +357,7 @@ Vars --> Logging
 - [src/runtime/model_factory.py:115-145](file://src/runtime/model_factory.py#L115-L145)
 
 ### Supported Providers
-- **Google Gemini**: Free tier with no credit card required
+- **Google Gemini**: Free tier with no credit card required, now using enhanced gemini-3.6-flash model
 - **OpenAI**: GPT models with standard API
 - **Anthropic**: Claude models with configurable parameters
 - **AWS Bedrock**: Enterprise-grade models with AWS credential chain
@@ -365,10 +365,22 @@ Vars --> Logging
 - **Ollama**: Local model execution for privacy-sensitive deployments
 - **LiteLLM**: Universal adapter supporting multiple provider formats
 
+### Enhanced Gemini Configuration
+
+**Updated** The system has been updated to use the latest Google Gemini model (gemini-3.6-flash) which provides improved natural language processing capabilities and enhanced reasoning performance for care coordination tasks.
+
+Key configuration updates include:
+- **Default Model**: Changed from `gemini-2.5-flash` to `gemini-3.6-flash` for improved accuracy
+- **Runtime Defaults**: Updated in both API configuration and runtime model factory
+- **Enhanced NLP**: Better understanding of complex care scenarios and medical terminology
+- **Improved Reasoning**: More accurate routing decisions for complex multi-step care workflows
+
 **Section sources**
 - [src/runtime/model_factory.py:57-65](file://src/runtime/model_factory.py#L57-L65)
 - [src/runtime/model_factory.py:276-451](file://src/runtime/model_factory.py#L276-L451)
 - [src/api/config.py:146-224](file://src/api/config.py#L146-L224)
+- [src/runtime/model_factory.py:91-102](file://src/runtime/model_factory.py#L91-L102)
+- [src/api/config.py:159-162](file://src/api/config.py#L159-L162)
 
 ## External System Integration (MCP)
 
@@ -620,4 +632,4 @@ Key architectural strengths include:
 - **Security**: Multi-layered security with credential management
 - **Scalability**: Horizontal scaling patterns and efficient resource usage
 
-Recent enhancements have significantly improved the user experience through integrated real-time chat, improved navigation with automatic modal opening, and better multi-user support through dynamic care recipient identification. These improvements position CareBridge for future enhancements including advanced analytics, machine learning capabilities, and expanded integration ecosystems while maintaining the reliability and safety guarantees essential for healthcare applications.
+Recent enhancements have significantly improved the user experience through integrated real-time chat, improved navigation with automatic modal opening, and better multi-user support through dynamic care recipient identification. The upgrade to gemini-3.6-flash provides enhanced natural language processing capabilities and improved reasoning performance for complex care coordination scenarios. These improvements position CareBridge for future enhancements including advanced analytics, machine learning capabilities, and expanded integration ecosystems while maintaining the reliability and safety guarantees essential for healthcare applications.

@@ -1,9 +1,20 @@
 # CareBridge System Architecture
 
-**Last updated:** 2026-09-11
+**Last updated:** 2026-09-12
 **Version:** 1.0
 **Framework:** Strands Agents SDK (Python) + Qoder MCP + Qoder Cloud Agents
 **Companion documents:** `SPEC.md` (functional spec), `AGENTS.md` (agent boundary rules)
+
+---
+
+## Deployed URLs
+
+| Component | URL | Provider |
+|---|---|---|
+| **Frontend (Dashboard)** | https://care-bridge-sable-one.vercel.app | Vercel |
+| **Backend (API)** | https://carebridge-production-4bd1.up.railway.app | Railway |
+| **API Docs (Swagger)** | https://carebridge-production-4bd1.up.railway.app/docs | Railway |
+| **Firebase Project** | `carebridge-675df` | Google Cloud |
 
 ---
 

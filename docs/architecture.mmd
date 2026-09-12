@@ -1,0 +1,130 @@
+%%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#f0f4f8', 'primaryTextColor': '#1a202c', 'primaryBorderColor': '#4a5568', 'lineColor': '#2d3748', 'secondaryColor': '#edf2f7', 'tertiaryColor': '#e2e8f0'}}}%%
+flowchart TB
+    subgraph User["👤 User Layer"]
+        CG["Caregiver<br/><b>Next.js 15 Dashboard</b><br/>Vercel: care-bridge-sable-one.vercel.app"]
+        FM["Family Members<br/>SMS / Email / Phone"]
+    end
+
+    subgraph Firebase["🔐 Firebase Auth"]
+        FB["Firebase Project<br/>carebridge-675df<br/>Google Sign-In"]
+    end
+
+    subgraph Railway["🚂 Railway — FastAPI Backend"]
+        direction TB
+        GW["API Gateway<br/>carebridge-production-4bd1.up.railway.app"]
+        
+        subgraph Middleware["Middleware Stack"]
+            CORS["CORS"]
+            RL["Rate Limiter<br/>slowapi"]
+            RID["Request-ID<br/>+ Size Cap"]
+        end
+
+        subgraph Auth["Auth Layer"]
+            FV["Firebase Token<br/>Verifier"]
+            JWT["JWT Issuer<br/>Business Claims"]
+            RBAC["RBAC<br/>Primary / Secondary / Viewer"]
+        end
+
+        subgraph Agents["Agent Orchestration"]
+            SUP["<b>Supervisor Agent</b><br/>LLM-driven routing<br/>Strands Agents SDK"]
+            
+            subgraph Specialists["Specialized Agents (agents-as-tools)"]
+                MED["Medication Agent<br/>refills, adherence"]
+                APT["Appointment Agent<br/>calendar, scheduling"]
+                LOG["Logistics Agent<br/>delivery coordination"]
+                COM["Communication Agent<br/>family alerts, status"]
+            end
+            
+            ESC["Escalation Logic<br/>Deterministic Python<br/>classify_action()"]
+        end
+
+        subgraph MCP["MCP Integration Layer (In-Process)"]
+            PHAR["Pharmacy MCP<br/>check_refill_status<br/>order_refill<br/>get_medication_schedule"]
+            MSG["Messaging MCP<br/>send_sms<br/>send_email"]
+            DEL["Delivery MCP<br/>check_delivery_status<br/>order_grocery<br/>order_pharmacy_delivery"]
+            CAL["Calendar MCP<br/>get_calendar<br/>schedule_appointment"]
+        end
+
+        subgraph Storage["Storage"]
+            AUDIT[("audit.db<br/>SQLite IMMUTABLE<br/>triggers prevent<br/>UPDATE/DELETE")]
+            AUTHDB[("auth.db<br/>SQLite users")]
+        end
+    end
+
+    subgraph LLM["🧠 LLM Provider (configurable)"]
+        direction LR
+        GEM["Google Gemini<br/>(default)"]
+        GRQ["Groq"]
+        BRK["Amazon Bedrock"]
+        ANT["Anthropic"]
+        OAI["OpenAI"]
+        OLL["Ollama<br/>(local)"]
+        LTL["LiteLLM<br/>(universal)"]
+    end
+
+    subgraph External["🔌 External Services (upgradeable)"]
+        direction LR
+        TWILIO["Twilio SMS<br/><i>mocked → trial ready</i>"]
+        GCAL["Google Calendar<br/><i>mocked → OAuth ready</i>"]
+        SG["SendGrid Email<br/><i>mocked → trial ready</i>"]
+        RX["Pharmacy API<br/><i>mocked → contract needed</i>"]
+        DLV["Delivery API<br/><i>mocked → contract needed</i>"]
+    end
+
+    %% User flows
+    CG -->|"1. Google Sign-In"| FB
+    FB -->|"2. ID Token"| GW
+    GW --> Middleware
+    Middleware --> Auth
+    FV -->|"3. Verify"| JWT
+    JWT -->|"4. Business JWT"| CG
+    CG -->|"5. Bearer Token"| GW
+    FM -.->|"receive alerts"| MSG
+
+    %% Agent flows
+    GW --> SUP
+    SUP -->|"route"| MED
+    SUP -->|"route"| APT
+    SUP -->|"route"| LOG
+    SUP -->|"route"| COM
+    SUP --> ESC
+
+    %% MCP flows
+    MED --> PHAR
+    APT --> CAL
+    LOG --> DEL
+    COM --> MSG
+
+    %% LLM flows
+    SUP -->|"inference"| LLM
+
+    %% Audit flows
+    SUP -->|"write BEFORE"| AUDIT
+    MED -->|"write"| AUDIT
+    APT -->|"write"| AUDIT
+    LOG -->|"write"| AUDIT
+    COM -->|"write"| AUDIT
+
+    %% External service flows
+    PHAR -.->|"upgrade"| RX
+    MSG -.->|"upgrade"| TWILIO
+    MSG -.->|"upgrade"| SG
+    CAL -.->|"upgrade"| GCAL
+    DEL -.->|"upgrade"| DLV
+
+    %% Styling
+    classDef userLayer fill:#e6fffa,stroke:#234e52
+    classDef authLayer fill:#fefcbf,stroke:#744210
+    classDef agentLayer fill:#e9d8fd,stroke:#44337a
+    classDef mcpLayer fill:#fed7d7,stroke:#742a2a
+    classDef storageLayer fill:#c6f6d5,stroke:#22543d
+    classDef llmLayer fill:#bee3f8,stroke:#2a4365
+    classDef externalLayer fill:#feebc8,stroke:#7b341e
+
+    class CG,FM userLayer
+    class FB,FV,JWT,RBAC authLayer
+    class SUP,MED,APT,LOG,COM,ESC agentLayer
+    class PHAR,MSG,DEL,CAL mcpLayer
+    class AUDIT,AUTHDB storageLayer
+    class GEM,GRQ,BRK,ANT,OAI,OLL,LTL llmLayer
+    class TWILIO,GCAL,SG,RX,DLV externalLayer
