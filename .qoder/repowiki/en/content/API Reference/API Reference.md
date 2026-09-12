@@ -9,6 +9,7 @@
 - [config.py](file://src/api/config.py)
 - [dependencies.py](file://src/api/dependencies.py)
 - [auth.py](file://src/api/routers/auth.py)
+- [firebase_auth.py](file://src/api/firebase_auth.py)
 - [query.py](file://src/api/routers/query.py)
 - [status.py](file://src/api/routers/status.py)
 - [approvals.py](file://src/api/routers/approvals.py)
@@ -19,6 +20,7 @@
 - [alerts.py](file://src/api/routers/alerts.py)
 - [deliveries.py](file://src/api/routers/deliveries.py)
 - [__init__.py](file://src/api/routers/__init__.py)
+- [user_store.py](file://src/api/user_store.py)
 - [supervisor_agent.py](file://src/agents/supervisor_agent.py)
 - [schemas.py](file://src/models/schemas.py)
 - [audit_log.py](file://src/models/audit_log.py)
@@ -31,12 +33,11 @@
 
 ## Update Summary
 **Changes Made**
-- Added comprehensive FastAPI REST API documentation with authentication endpoints
-- Documented CRUD operations for appointments and medications
-- Added audit logging, health monitoring, and middleware documentation
-- Included CORS, rate limiting, and request ID tracking details
-- Updated API structure to reflect the new router-based architecture
-- Enhanced authentication and authorization requirements section
+- Enhanced Firebase authentication with cloud deployment support via FIREBASE_CREDENTIALS_JSON environment variable
+- Added automatic user onboarding with care recipient creation during Firebase exchange
+- Implemented improved authentication flow with comprehensive audit logging for new user events
+- Updated Firebase configuration and initialization process for better cloud compatibility
+- Enhanced error handling and graceful degradation for Firebase authentication endpoints
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -58,7 +59,7 @@ CareBridge provides a comprehensive FastAPI REST API for system interaction, bui
 
 The API follows modern REST principles with JWT authentication, comprehensive audit logging, health monitoring, and robust error handling. All endpoints are documented through OpenAPI/Swagger at `/docs` endpoint.
 
-**Updated** Added complete FastAPI REST API layer with authentication, CRUD operations, and middleware infrastructure while maintaining backward compatibility with existing Supervisor Agent functions.
+**Updated** Enhanced Firebase authentication with cloud deployment support, automatic user onboarding, and improved audit logging for comprehensive user lifecycle management.
 
 ## Project Structure
 CareBridge's API is organized as a modular FastAPI application with clear separation of concerns:
@@ -72,18 +73,21 @@ Routers["API Routers<br/>Auth, Query, Status, CRUD"]
 Dependencies["Dependencies<br/>User Auth, Supervisor"]
 Schemas["Pydantic Models<br/>Request/Response Types"]
 Audit["Audit Trail<br/>Immutable SQLite"]
+Firebase["Firebase Auth<br/>Cloud Deployment Support"]
 Client --> Main
 Main --> Middleware
 Middleware --> Routers
 Routers --> Dependencies
 Routers --> Schemas
 Routers --> Audit
+Routers --> Firebase
 ```
 
 **Diagram sources**
 - [main.py:77-120](file://src/api/main.py#L77-L120)
 - [__init__.py:24-39](file://src/api/routers/__init__.py#L24-L39)
 - [middleware.py:121-168](file://src/api/middleware.py#L121-L168)
+- [firebase_auth.py:43-133](file://src/api/firebase_auth.py#L43-L133)
 
 **Section sources**
 - [main.py:1-125](file://src/api/main.py#L1-L125)
@@ -96,8 +100,9 @@ The API surface consists of several key components that work together to provide
 - `POST /auth/login` - Exchange credentials for access/refresh token pair
 - `POST /auth/refresh` - Refresh expired access tokens
 - `GET /auth/me` - Get current authenticated user information
-- `POST /auth/firebase/exchange` - Exchange Firebase ID token for CareBridge JWTs
+- `POST /auth/firebase/exchange` - Exchange Firebase ID token for CareBridge JWTs with automatic onboarding
 - `GET /auth/firebase/config` - Check if Firebase authentication is enabled
+- `POST /auth/firebase/verify` - Verify Firebase ID token without issuing tokens
 
 ### Care Coordination Endpoints
 - `POST /query` - Natural language Q&A backed by Supervisor Agent
@@ -119,6 +124,7 @@ The API surface consists of several key components that work together to provide
 
 **Section sources**
 - [auth.py:60-140](file://src/api/routers/auth.py#L60-L140)
+- [auth.py:163-321](file://src/api/routers/auth.py#L163-L321)
 - [query.py:22-56](file://src/api/routers/query.py#L22-L56)
 - [status.py:21-37](file://src/api/routers/status.py#L21-L37)
 - [approvals.py:36-134](file://src/api/routers/approvals.py#L36-L134)
@@ -135,29 +141,34 @@ participant C as "Client"
 participant F as "FastAPI"
 participant M as "Middleware"
 participant A as "Auth"
-participant S as "Supervisor"
-participant D as "Database"
+participant FA as "Firebase Auth"
+participant US as "User Store"
+participant AU as "Audit Log"
 C->>F : HTTP Request
 F->>M : Apply Middleware
 M->>A : Validate JWT Token
 A-->>M : User Context
-M->>S : Route to Handler
-S->>D : Read/Write Data
-D-->>S : Results
-S-->>F : Business Logic Result
-F-->>C : JSON Response
-Note over M,D : All mutations write audit events first
+M->>FA : Firebase Token Verification
+FA->>US : Create/Link User & Care Recipient
+US-->>FA : User Data
+FA->>AU : Write Onboarding Events
+AU-->>FA : Confirmation
+FA-->>M : Custom Token + JWTs
+M->>C : Response with Tokens
 ```
 
 **Diagram sources**
 - [main.py:101-118](file://src/api/main.py#L101-L118)
 - [dependencies.py:42-84](file://src/api/dependencies.py#L42-L84)
-- [audit.py:22-58](file://src/api/routers/audit.py#L22-L58)
+- [auth.py:163-321](file://src/api/routers/auth.py#L163-L321)
+- [firebase_auth.py:43-133](file://src/api/firebase_auth.py#L43-L133)
+- [user_store.py:291-355](file://src/api/user_store.py#L291-L355)
+- [audit_log.py:81-130](file://src/models/audit_log.py#L81-L130)
 
 ## Detailed Component Analysis
 
-### Authentication System
-The authentication system supports both traditional email/password and Firebase integration:
+### Enhanced Authentication System
+The authentication system now supports both traditional email/password and enhanced Firebase integration with cloud deployment capabilities:
 
 **JWT Authentication Flow:**
 1. Client sends credentials to `/auth/login`
@@ -165,22 +176,33 @@ The authentication system supports both traditional email/password and Firebase 
 3. Returns access token (15 min) and refresh token (7 days)
 4. Subsequent requests include `Authorization: Bearer <token>` header
 
-**Firebase Integration:**
-- Hybrid identity model supporting Google sign-in
-- Exchanges Firebase ID tokens for CareBridge JWTs
-- Automatic user provisioning and care recipient assignment
-- Custom tokens for client-side Firebase SDK usage
+**Enhanced Firebase Integration:**
+- **Cloud Deployment Support**: Priority-based credential loading with `FIREBASE_CREDENTIALS_JSON` environment variable for cloud deployments
+- **Automatic User Onboarding**: New users automatically receive care recipient assignment during Firebase exchange
+- **Comprehensive Audit Logging**: Every Firebase authentication event creates immutable audit trail entries
+- **Hybrid Identity Model**: Supports Google sign-in with seamless migration from password-based auth
+
+**Updated Firebase Authentication Flow:**
+1. Client exchanges Firebase ID token via `/auth/firebase/exchange`
+2. Server verifies token and finds/creates user account
+3. Automatic care recipient creation for new users
+4. Issues CareBridge JWTs and Firebase custom tokens with business claims
+5. Creates audit events for onboarding and login tracking
 
 **Security Features:**
 - Rate limiting on auth endpoints (60/min default)
 - Constant-time password comparison
 - Secure token storage and rotation
 - Role-based access control (RBAC)
+- Graceful degradation when Firebase is unavailable
 
 **Section sources**
 - [auth.py:60-140](file://src/api/routers/auth.py#L60-L140)
-- [auth.py:163-320](file://src/api/routers/auth.py#L163-L320)
-- [dependencies.py:42-84](file://src/api/dependencies.py#L42-L84)
+- [auth.py:163-321](file://src/api/routers/auth.py#L163-L321)
+- [firebase_auth.py:43-133](file://src/api/firebase_auth.py#L43-L133)
+- [firebase_auth.py:136-218](file://src/api/firebase_auth.py#L136-L218)
+- [user_store.py:291-355](file://src/api/user_store.py#L291-L355)
+- [config.py:226-246](file://src/api/config.py#L226-L246)
 
 ### Care Coordination API
 The core care coordination functionality is exposed through two main endpoints:
@@ -276,8 +298,8 @@ Three predefined roles with specific permissions:
 | `caregiver_secondary` | Full CRUD + approve/reject actions |
 | `caregiver_primary` | All permissions including user management |
 
-### Firebase Integration
-Optional Firebase authentication for hybrid identity:
+### Enhanced Firebase Integration
+Optional Firebase authentication with cloud deployment support:
 
 ```python
 # Exchange Firebase ID token for CareBridge JWTs
@@ -286,16 +308,24 @@ response = await client.post("/auth/firebase/exchange", json={
 })
 ```
 
-**Features:**
-- Automatic user provisioning from Firebase profile
-- Care recipient assignment during onboarding
-- Custom tokens for client-side Firebase SDK
-- Seamless migration from password-based auth
+**Updated Features:**
+- **Cloud Deployment Support**: `FIREBASE_CREDENTIALS_JSON` environment variable for containerized deployments
+- **Automatic User Onboarding**: New users automatically assigned care recipients during first login
+- **Comprehensive Audit Logging**: Immutable audit trail for all Firebase authentication events
+- **Graceful Degradation**: Service remains available even when Firebase is unavailable
+
+**Configuration Options:**
+- `FIREBASE_AUTH_ENABLED`: Enable/disable Firebase authentication
+- `FIREBASE_PROJECT_ID`: Firebase project identifier
+- `FIREBASE_CREDENTIALS_JSON`: JSON service account for cloud deployments
+- `FIREBASE_SERVICE_ACCOUNT_PATH`: Local file path for development
 
 **Section sources**
 - [auth.py:60-140](file://src/api/routers/auth.py#L60-L140)
-- [auth.py:163-320](file://src/api/routers/auth.py#L163-L320)
-- [dependencies.py:87-109](file://src/api/dependencies.py#L87-L109)
+- [auth.py:163-321](file://src/api/routers/auth.py#L163-L321)
+- [firebase_auth.py:43-133](file://src/api/firebase_auth.py#L43-L133)
+- [config.py:226-246](file://src/api/config.py#L226-L246)
+- [user_store.py:291-355](file://src/api/user_store.py#L291-L355)
 
 ## Rate Limiting and Security
 
@@ -418,6 +448,33 @@ async def authenticate():
         )
 ```
 
+### Enhanced Firebase Authentication Flow
+```python
+async def firebase_authenticate(firebase_id_token):
+    async with httpx.AsyncClient() as client:
+        # Exchange Firebase token for CareBridge JWTs
+        response = await client.post(
+            "http://localhost:8000/auth/firebase/exchange",
+            json={"id_token": firebase_id_token}
+        )
+        
+        result = response.json()
+        access_token = result["access_token"]
+        refresh_token = result["refresh_token"]
+        custom_token = result["custom_token"]
+        
+        # Store tokens for subsequent API calls
+        headers = {"Authorization": f"Bearer {access_token}"}
+        
+        # Use custom_token for Firebase SDK operations
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "custom_token": custom_token,
+            "user": result["user"]
+        }
+```
+
 ### Error Handling Pattern
 ```python
 async def handle_api_call(client, endpoint, data):
@@ -463,6 +520,7 @@ async def fetch_all_audit_events():
 
 **Section sources**
 - [auth.py:60-88](file://src/api/routers/auth.py#L60-L88)
+- [auth.py:163-321](file://src/api/routers/auth.py#L163-L321)
 - [audit.py:22-58](file://src/api/routers/audit.py#L22-L58)
 
 ## Performance Considerations
@@ -493,6 +551,13 @@ async def fetch_all_audit_events():
 - **401 Unauthorized**: Invalid or expired JWT token
 - **403 Forbidden**: Insufficient role permissions
 - **422 Unprocessable Entity**: Invalid request payload
+- **503 Service Unavailable**: Firebase not configured or unavailable
+
+### Enhanced Firebase Troubleshooting
+- **Firebase Initialization Failures**: Check `FIREBASE_CREDENTIALS_JSON` format and validity
+- **Email Not Verified**: Ensure Firebase user has verified email address
+- **Missing Care Recipient**: New users automatically get care recipients assigned
+- **Audit Log Failures**: Non-critical failures are logged but don't block authentication
 
 ### API Error Patterns
 All errors follow a consistent envelope format:
@@ -519,15 +584,18 @@ All errors follow a consistent envelope format:
 **Section sources**
 - [middleware.py:171-245](file://src/api/middleware.py#L171-L245)
 - [audit.py:22-58](file://src/api/routers/audit.py#L22-L58)
+- [firebase_auth.py:125-133](file://src/api/firebase_auth.py#L125-L133)
 
 ## Conclusion
 CareBridge's FastAPI REST API provides a comprehensive, secure, and scalable interface for care coordination systems. The API combines the power of the existing Supervisor Agent with modern REST principles, offering:
 
-- **Complete Authentication**: JWT-based with Firebase integration
+- **Complete Authentication**: JWT-based with enhanced Firebase integration and cloud deployment support
 - **Rich Functionality**: CRUD operations, Q&A, approvals, and monitoring
 - **Robust Security**: Rate limiting, input validation, and RBAC
 - **Operational Excellence**: Health monitoring, audit trails, and graceful degradation
 - **Developer Experience**: Comprehensive documentation and consistent error handling
+
+**Updated** The enhanced Firebase authentication system now supports cloud deployments with automatic user onboarding and comprehensive audit logging, providing a seamless experience for both local development and production environments.
 
 The API maintains backward compatibility with existing Supervisor Agent functions while providing a modern REST interface for new integrations.
 
@@ -546,7 +614,7 @@ The API uses semantic versioning with the following approach:
 - Enum values only appended, never removed
 - Error codes remain stable across minor versions
 
-### Environment Configuration
+### Enhanced Environment Configuration
 Key environment variables for deployment:
 
 ```bash
@@ -570,6 +638,12 @@ CORS_ORIGINS="http://localhost:3000,https://app.carebridge.com"
 AUTH_DB_PATH="/data/auth.db"
 AUDIT_DB_PATH="/data/audit.db"
 
+# Firebase Authentication (Cloud Deployment)
+FIREBASE_AUTH_ENABLED=true
+FIREBASE_PROJECT_ID="your-project-id"
+FIREBASE_CREDENTIALS_JSON='{"type":"service_account","project_id":"..."}'
+# Alternative: FIREBASE_SERVICE_ACCOUNT_PATH="/path/to/service-account.json"
+
 # Logging
 JSON_LOGGING="true"
 LOG_LEVEL="INFO"
@@ -581,7 +655,10 @@ LOG_LEVEL="INFO"
 - Test authentication flows with test users
 - Validate rate limiting behavior with concurrent requests
 - Verify audit trail completeness for all operations
+- Test Firebase authentication with mock service accounts
 
 **Section sources**
 - [config.py:48-358](file://src/api/config.py#L48-L358)
 - [main.py:65-70](file://src/api/main.py#L65-L70)
+- [firebase_auth.py:85-110](file://src/api/firebase_auth.py#L85-L110)
+- [auth.py:247-268](file://src/api/routers/auth.py#L247-L268)

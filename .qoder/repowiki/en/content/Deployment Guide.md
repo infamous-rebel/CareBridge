@@ -9,6 +9,7 @@
 - [.dockerignore](file://.dockerignore)
 - [src/api/main.py](file://src/api/main.py)
 - [src/api/config.py](file://src/api/config.py)
+- [src/api/firebase_auth.py](file://src/api/firebase_auth.py)
 - [src/api/routers/health.py](file://src/api/routers/health.py)
 - [requirements.txt](file://requirements.txt)
 - [SPEC.md](file://SPEC.md)
@@ -27,6 +28,7 @@
 - Integrated health check endpoints for liveness, readiness, and version information
 - Updated container orchestration with docker-compose for simplified deployment
 - Added security hardening with non-root user execution and proper file permissions
+- **Updated Firebase authentication to support cloud deployment scenarios with FIREBASE_CREDENTIALS_JSON environment variable**
 
 ## Table of Contents
 1. Introduction
@@ -255,6 +257,50 @@ CareBridge provides comprehensive health monitoring through dedicated endpoints:
 - [SPEC.md:455-465](file://SPEC.md#L455-L465)
 - [src/api/config.py:174-182](file://src/api/config.py#L174-L182)
 
+### Firebase Authentication for Cloud Deployment
+CareBridge supports hybrid identity authentication with Firebase, now enhanced for seamless cloud deployment without file system access:
+
+**Firebase Configuration Options:**
+
+**Priority 1: Environment Variable (Cloud Deployment)**
+- `FIREBASE_CREDENTIALS_JSON`: Full Firebase service account JSON as a single-line environment variable
+- Ideal for containerized environments and platforms that don't support file mounts
+- Automatically parsed from JSON string during initialization
+
+**Priority 2: File-Based Configuration (Traditional)**
+- `FIREBASE_SERVICE_ACCOUNT_PATH`: Path to service account JSON file
+- Falls back to file-based configuration when environment variable is not set
+- Maintains backward compatibility with existing deployments
+
+**Cloud Deployment Best Practices:**
+- Store `FIREBASE_CREDENTIALS_JSON` in platform secret managers (AWS Secrets Manager, Azure Key Vault, etc.)
+- Use single-line JSON format for environment variable compatibility
+- Ensure proper escaping and encoding when passing JSON through environment variables
+- Validate JSON structure before deployment to catch configuration errors early
+
+**Configuration Example:**
+```bash
+# Cloud deployment with environment variable
+export FIREBASE_AUTH_ENABLED=true
+export FIREBASE_PROJECT_ID=your-project-id
+export FIREBASE_CREDENTIALS_JSON='{"type":"service_account","project_id":"..."}'
+
+# Traditional file-based deployment
+export FIREBASE_AUTH_ENABLED=true
+export FIREBASE_PROJECT_ID=your-project-id
+export FIREBASE_SERVICE_ACCOUNT_PATH=/path/to/service-account.json
+```
+
+**Graceful Degradation:**
+- If Firebase initialization fails, endpoints return 503 with clear error messages
+- Logging provides detailed information about configuration issues
+- Frontend can detect Firebase availability via `/auth/firebase/config` endpoint
+
+**Section sources**
+- [src/api/firebase_auth.py:43-133](file://src/api/firebase_auth.py#L43-L133)
+- [src/api/config.py:235-246](file://src/api/config.py#L235-L246)
+- [.env.example:134-143](file://.env.example#L134-L143)
+
 ### Local Development Setup
 - **Direct Execution**: Run the FastAPI application directly with uvicorn for development
 - **Demo Mode**: Automatic seeding of demo users and fixtures when DEMO_MODE=true
@@ -275,7 +321,7 @@ open http://localhost:8000/docs
 
 **Section sources**
 - [src/api/main.py:3-9](file://src/api/main.py#L3-L9)
-- [src/api/config.py:66-82](file://src/api/config.py#L66-L82)
+- [src/api/config.py:66-82](file://src/api/config.py#L66-82)
 - [.env.example:28-75](file://.env.example#L28-L75)
 
 ### Scaling Considerations
@@ -460,6 +506,11 @@ Common issues and resolutions:
 - Port conflicts: Check port 8000 availability and update docker-compose.yml if needed
 - Health check failures: Inspect `/ready` endpoint response for dependency status
 
+**Firebase Authentication Issues:**
+- Invalid FIREBASE_CREDENTIALS_JSON: Ensure JSON is properly formatted and contains all required fields
+- File-based configuration: Verify FIREBASE_SERVICE_ACCOUNT_PATH points to valid service account file
+- Initialization failures: Check logs for detailed error messages about Firebase configuration
+
 **Application Issues:**
 - Missing fixtures: Ensure all required JSON files exist under fixtures/ directory
 - Audit database errors: Verify database path permissions and SQLite file accessibility
@@ -478,7 +529,7 @@ Common issues and resolutions:
 - [src/agents/supervisor_agent.py:318-339](file://src/agents/supervisor_agent.py#L318-L339)
 
 ## Conclusion
-CareBridge provides a robust, auditable, and scalable foundation for care coordination with comprehensive production deployment support. The enhanced containerization, health monitoring, and configuration management capabilities enable reliable operation in production environments while maintaining safety, auditability, and observability standards. By following this deployment guide—covering environment setup, containerization, cloud integration, scaling, monitoring, security, disaster recovery, and upgrades—you can operate the system reliably in production while maintaining safety and compliance.
+CareBridge provides a robust, auditable, and scalable foundation for care coordination with comprehensive production deployment support. The enhanced containerization, health monitoring, configuration management, and Firebase authentication capabilities enable reliable operation in production environments while maintaining safety, auditability, and observability standards. By following this deployment guide—covering environment setup, containerization, cloud integration, scaling, monitoring, security, disaster recovery, and upgrades—you can operate the system reliably in production while maintaining safety and compliance.
 
 ## Appendices
 
@@ -527,8 +578,20 @@ docker run -d \
   carebridge-api:$(git rev-parse --short HEAD)
 ```
 
+**Firebase Cloud Deployment:**
+```bash
+# Set Firebase credentials as environment variable
+export FIREBASE_AUTH_ENABLED=true
+export FIREBASE_PROJECT_ID=your-project-id
+export FIREBASE_CREDENTIALS_JSON='{"type":"service_account","project_id":"..."}'
+
+# Or use file-based configuration
+export FIREBASE_SERVICE_ACCOUNT_PATH=/path/to/service-account.json
+```
+
 **Section sources**
 - [docker-compose.yml:3-7](file://docker-compose.yml#L3-L7)
 - [Dockerfile:65-68](file://Dockerfile#L65-L68)
 - [requirements.txt:1-36](file://requirements.txt#L1-L36)
 - [src/api/routers/health.py:75-84](file://src/api/routers/health.py#L75-L84)
+- [.env.example:134-143](file://.env.example#L134-L143)

@@ -47,10 +47,8 @@ def get_calendar(care_recipient_id: str, horizon_days: int = 30) -> list[Appoint
         horizon_days: Number of days to look ahead (default 30).
 
     Returns:
-        List of Appointment objects within the horizon.
-
-    Raises:
-        ValueError: If care_recipient_id not found in any fixture record.
+        List of Appointment objects within the horizon. Returns an empty
+        list when no appointments exist for the given care_recipient_id.
     """
     raw_appointments = _load_appointments()
 
@@ -60,9 +58,11 @@ def get_calendar(care_recipient_id: str, horizon_days: int = 30) -> list[Appoint
     ]
 
     if not recipient_appts:
-        raise ValueError(
-            f"No appointments found for care_recipient_id: {care_recipient_id}"
+        logger.info(
+            "get_calendar: no appointments found for %s, returning empty list",
+            care_recipient_id,
         )
+        return []
 
     now = datetime.now(timezone.utc)
     horizon_end = now + timedelta(days=horizon_days)

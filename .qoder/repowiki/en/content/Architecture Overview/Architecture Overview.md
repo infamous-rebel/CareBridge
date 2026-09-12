@@ -11,6 +11,11 @@
 - [src/ui/package.json](file://src/ui/package.json)
 - [src/ui/app/dashboard/page.tsx](file://src/ui/app/dashboard/page.tsx)
 - [src/ui/lib/api.ts](file://src/ui/lib/api.ts)
+- [src/ui/lib/auth-context.tsx](file://src/ui/lib/auth-context.tsx)
+- [src/ui/app/dashboard/medications/page.tsx](file://src/ui/app/dashboard/medications/page.tsx)
+- [src/ui/app/dashboard/appointments/page.tsx](file://src/ui/app/dashboard/appointments/page.tsx)
+- [src/ui/components/AppointmentModal.tsx](file://src/ui/components/AppointmentModal.tsx)
+- [src/ui/components/MedicationModal.tsx](file://src/ui/components/MedicationModal.tsx)
 - [src/agents/supervisor_agent.py](file://src/agents/supervisor_agent.py)
 - [src/agents/medication_agent.py](file://src/agents/medication_agent.py)
 - [src/agents/appointment_agent.py](file://src/agents/appointment_agent.py)
@@ -24,12 +29,10 @@
 
 ## Update Summary
 **Changes Made**
-- Added complete FastAPI backend architecture with comprehensive API layer
-- Integrated Next.js frontend with React Query for state management
-- Implemented multi-provider LLM integration through model factory pattern
-- Added Model Context Protocol (MCP) servers for external system coordination
-- Enhanced supervisor agent with both Strands SDK and Qoder runtime support
-- Expanded audit trail and monitoring capabilities across all layers
+- Enhanced dashboard interface with integrated real-time chat replacing modal-based actions
+- Implemented improved navigation system with automatic modal opening via URL parameters
+- Added better multi-user support through dynamic care recipient identification using authenticated user context
+- Updated frontend architecture to support seamless user experience improvements
 
 ## Table of Contents
 1. Introduction
@@ -59,6 +62,7 @@ subgraph "Frontend Layer"
 UI[Next.js Dashboard<br/>React + TypeScript]
 Auth[Firebase Auth<br/>JWT Tokens]
 State[React Query<br/>State Management]
+Chat[Real-time Chat<br/>Integrated Interface]
 end
 subgraph "API Layer"
 FastAPI[FastAPI Application<br/>Middleware & Routers]
@@ -150,7 +154,7 @@ Main --> Exceptions
 ## Frontend Layer (Next.js)
 
 ### User Interface Architecture
-The Next.js frontend provides a modern, responsive dashboard for care coordination with real-time updates, chat interface, and comprehensive data visualization.
+The Next.js frontend provides a modern, responsive dashboard for care coordination with real-time updates, integrated chat interface, and comprehensive data visualization.
 
 ```mermaid
 graph LR
@@ -158,13 +162,18 @@ subgraph "Dashboard Components"
 Overview[Overview Page]
 Activity[Activity Feed]
 Approvals[Approval Queue]
-Chat[Chat Interface]
+Chat[Integrated Chat Bar]
 Status[Status Cards]
 end
 subgraph "State Management"
 QueryClient[React Query Client]
 AuthContext[Auth Context]
 Toast[Toast Notifications]
+end
+subgraph "Navigation"
+URLParams[URL Parameter Routing]
+AutoModal[Automatic Modal Opening]
+Router[Next.js Router]
 end
 subgraph "API Integration"
 ApiClient[API Client]
@@ -177,6 +186,8 @@ Approvals --> QueryClient
 Chat --> ApiClient
 Status --> QueryClient
 QueryClient --> ApiClient
+URLParams --> AutoModal
+AutoModal --> Router
 ApiClient --> Schemas
 ApiClient --> Firebase
 AuthContext --> ApiClient
@@ -185,19 +196,81 @@ AuthContext --> ApiClient
 **Diagram sources**
 - [src/ui/app/dashboard/page.tsx:62-492](file://src/ui/app/dashboard/page.tsx#L62-L492)
 - [src/ui/lib/api.ts:269-678](file://src/ui/lib/api.ts#L269-L678)
+- [src/ui/app/dashboard/medications/page.tsx:24-32](file://src/ui/app/dashboard/medications/page.tsx#L24-L32)
+- [src/ui/app/dashboard/appointments/page.tsx:30-38](file://src/ui/app/dashboard/appointments/page.tsx#L30-L38)
 
-### Key Features
-- **Real-time Updates**: Polling intervals for alerts (5s), approvals (10s), and status (30s)
-- **Chat Interface**: Natural language queries with AI-powered responses
-- **Responsive Design**: Mobile-first approach with Tailwind CSS
-- **State Management**: React Query for server state with automatic caching and refetching
-- **Form Validation**: Zod schemas for type-safe form handling
-- **Authentication**: Firebase integration with JWT token management
+### Enhanced Dashboard Features
+
+**Updated** The dashboard now features an integrated real-time chat interface that replaces the previous modal-based action system. The chat bar is fixed at the bottom of the screen, providing immediate access to AI-powered queries and responses.
+
+Key enhancements include:
+- **Real-time Chat Integration**: Fixed bottom chat bar with instant response display
+- **Dynamic Care Recipient Identification**: Uses authenticated user's `care_recipient_id` from auth context
+- **Improved Navigation**: URL parameter-based automatic modal opening for create/edit actions
+- **Enhanced User Experience**: Seamless transitions between chat interactions and data management
 
 **Section sources**
 - [src/ui/app/dashboard/page.tsx:62-492](file://src/ui/app/dashboard/page.tsx#L62-L492)
 - [src/ui/lib/api.ts:269-678](file://src/ui/lib/api.ts#L269-L678)
-- [src/ui/package.json:1-35](file://src/ui/package.json#L1-L35)
+- [src/ui/lib/auth-context.tsx:41-165](file://src/ui/lib/auth-context.tsx#L41-L165)
+- [src/ui/app/dashboard/medications/page.tsx:24-32](file://src/ui/app/dashboard/medications/page.tsx#L24-L32)
+- [src/ui/app/dashboard/appointments/page.tsx:30-38](file://src/ui/app/dashboard/appointments/page.tsx#L30-L38)
+
+### Real-time Chat Interface
+
+**New Feature** The dashboard now includes a persistent chat interface that provides immediate access to AI-powered care coordination assistance.
+
+```mermaid
+sequenceDiagram
+participant User as "User"
+participant ChatBar as "Chat Interface"
+participant API as "Backend API"
+participant Supervisor as "Supervisor Agent"
+participant Tools as "Tools/MCP"
+User->>ChatBar : Enter question
+ChatBar->>API : POST /query (careRecipientId, question)
+API->>Supervisor : process_event(CareEvent)
+Supervisor->>Tools : execute_domain_tools()
+Tools-->>Supervisor : structured_result
+Supervisor-->>API : ResolutionResult
+API-->>ChatBar : QueryResponse
+ChatBar->>User : Display answer + timestamp
+```
+
+**Diagram sources**
+- [src/ui/app/dashboard/page.tsx:130-157](file://src/ui/app/dashboard/page.tsx#L130-L157)
+- [src/ui/lib/api.ts:489-500](file://src/ui/lib/api.ts#L489-L500)
+
+### Improved Navigation System
+
+**New Feature** The navigation system now supports automatic modal opening through URL parameters, enhancing user workflow efficiency.
+
+Both medication and appointment management pages implement consistent URL parameter handling:
+- `?action=create` automatically opens the create modal
+- URL cleanup prevents modal re-opening on page refresh
+- Consistent behavior across all CRUD operations
+
+**Section sources**
+- [src/ui/app/dashboard/medications/page.tsx:24-32](file://src/ui/app/dashboard/medications/page.tsx#L24-L32)
+- [src/ui/app/dashboard/appointments/page.tsx:30-38](file://src/ui/app/dashboard/appointments/page.tsx#L30-L38)
+
+### Multi-User Support Enhancement
+
+**Updated** The system now provides better multi-user support through dynamic care recipient identification using the authenticated user's context.
+
+The dashboard now extracts the care recipient ID from the authenticated user context rather than using hardcoded values:
+```typescript
+const careRecipientId = user?.care_recipient_id || CARE_RECIPIENT_ID;
+```
+
+This enables:
+- **Personalized Dashboards**: Each user sees only their assigned care recipients
+- **Secure Data Isolation**: Users cannot access other users' care recipient data
+- **Seamless Multi-User Experience**: Smooth switching between different care recipients
+
+**Section sources**
+- [src/ui/app/dashboard/page.tsx:67](file://src/ui/app/dashboard/page.tsx#L67)
+- [src/ui/lib/auth-context.tsx:41-165](file://src/ui/lib/auth-context.tsx#L41-L165)
 
 ## Multi-Agent Orchestration
 
@@ -547,4 +620,4 @@ Key architectural strengths include:
 - **Security**: Multi-layered security with credential management
 - **Scalability**: Horizontal scaling patterns and efficient resource usage
 
-This foundation positions CareBridge for future enhancements including advanced analytics, machine learning capabilities, and expanded integration ecosystems while maintaining the reliability and safety guarantees essential for healthcare applications.
+Recent enhancements have significantly improved the user experience through integrated real-time chat, improved navigation with automatic modal opening, and better multi-user support through dynamic care recipient identification. These improvements position CareBridge for future enhancements including advanced analytics, machine learning capabilities, and expanded integration ecosystems while maintaining the reliability and safety guarantees essential for healthcare applications.

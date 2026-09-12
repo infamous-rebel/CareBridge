@@ -187,7 +187,7 @@ export const MedicationOutSchema = z.object({
   refill_threshold: z.number(),
   pharmacy_id: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
-  active: z.number().optional(),
+  active: z.boolean().optional(),
   created_at: z.string(),
   updated_at: z.string().nullable().optional(),
 });

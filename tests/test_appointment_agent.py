@@ -25,10 +25,10 @@ class TestGetCalendar:
         assert all(isinstance(a, Appointment) for a in appointments)
         assert all(a.care_recipient_id == "cr-001" for a in appointments)
 
-    def test_invalid_recipient_raises(self):
-        """Invalid care_recipient_id raises ValueError."""
-        with pytest.raises(ValueError, match="No appointments found"):
-            get_calendar("cr-999")
+    def test_unknown_recipient_returns_empty(self):
+        """Unknown care_recipient_id returns an empty list."""
+        result = get_calendar("cr-999")
+        assert result == []
 
 
 class TestScheduleAppointment:
@@ -107,12 +107,15 @@ class TestHandleAppointmentmentEvent:
         assert len(result["actions_taken"]) > 0
 
     async def test_no_appointments_for_unknown_recipient(self, temp_audit_db):
-        """Unknown recipient returns 'no appointments' message."""
+        """Unknown recipient gets an empty calendar with no actions."""
         event = _make_appointment_event(care_recipient_id="cr-999")
         result = await handle_appointment_event(event)
 
         assert result["care_recipient_id"] == "cr-999"
-        assert any("No appointments" in a or "not found" in a.lower() for a in result["actions_taken"])
+        assert result["logistics_coordination_needed"] is False
+        assert result["checklists_sent"] == []
+        assert result["transport_appointments"] == []
+        assert any("0 appointments" in a for a in result["actions_taken"])
 
     async def test_result_structure(self, temp_audit_db):
         """Result dict has the expected keys."""
