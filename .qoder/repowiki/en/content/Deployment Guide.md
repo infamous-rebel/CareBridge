@@ -28,7 +28,7 @@
 - Integrated health check endpoints for liveness, readiness, and version information
 - Updated container orchestration with docker-compose for simplified deployment
 - Added security hardening with non-root user execution and proper file permissions
-- **Updated Firebase authentication to support cloud deployment scenarios with FIREBASE_CREDENTIALS_JSON environment variable**
+- **Updated Firebase authentication to support cloud deployment scenarios with FIREBASE_CREDENTIALS_B64 base64-encoded credentials as Priority 1**
 - **Added AUDIT_DB_PATH environment variable support for configurable audit database location in production deployments**
 
 ## Table of Contents
@@ -173,7 +173,7 @@ COM --> AUD
 - [Dockerfile:10-68](file://Dockerfile#L10-L68)
 - [requirements.txt:1-36](file://requirements.txt#L1-L36)
 - [src/api/config.py:48-358](file://src/api/config.py#L48-L358)
-- [.env.example:1-141](file://.env.example#L1-L141)
+- [.env.example:1-154](file://.env.example#L1-L154)
 
 ### Containerization with Docker
 CareBridge includes comprehensive Docker support with multi-stage builds and production-ready configurations:
@@ -291,29 +291,40 @@ CareBridge provides comprehensive health monitoring through dedicated endpoints:
 - [src/api/config.py:174-182](file://src/api/config.py#L174-L182)
 
 ### Firebase Authentication for Cloud Deployment
-CareBridge supports hybrid identity authentication with Firebase, now enhanced for seamless cloud deployment without file system access:
+**Updated** CareBridge now supports a three-tier priority system for Firebase authentication configuration, optimized for cloud deployment scenarios:
 
-**Firebase Configuration Options:**
+**Three-Tier Priority System:**
 
-**Priority 1: Environment Variable (Cloud Deployment)**
-- `FIREBASE_CREDENTIALS_JSON`: Full Firebase service account JSON as a single-line environment variable
+**Priority 1: Base64-Encoded Credentials (Cloud Deployment)**
+- `FIREBASE_CREDENTIALS_B64`: Base64-encoded Firebase service account JSON
+- **New feature** addressing Railway and cloud platform deployment issues with environment variable escaping
+- Safest method for platforms that mangle PEM newlines in raw JSON environment variables
+- Automatically decoded and parsed during initialization
+
+**Priority 2: Raw JSON Credentials (Existing)**
+- `FIREBASE_CREDENTIALS_JSON`: Full Firebase service account JSON as single-line environment variable
 - Ideal for containerized environments and platforms that don't support file mounts
 - Automatically parsed from JSON string during initialization
 
-**Priority 2: File-Based Configuration (Traditional)**
+**Priority 3: File-Based Configuration (Traditional)**
 - `FIREBASE_SERVICE_ACCOUNT_PATH`: Path to service account JSON file
-- Falls back to file-based configuration when environment variable is not set
+- Falls back to file-based configuration when environment variables are not set
 - Maintains backward compatibility with existing deployments
 
 **Cloud Deployment Best Practices:**
-- Store `FIREBASE_CREDENTIALS_JSON` in platform secret managers (AWS Secrets Manager, Azure Key Vault, etc.)
-- Use single-line JSON format for environment variable compatibility
-- Ensure proper escaping and encoding when passing JSON through environment variables
-- Validate JSON structure before deployment to catch configuration errors early
+- Use `FIREBASE_CREDENTIALS_B64` for cloud platforms like Railway, Heroku, and other PaaS providers
+- Generate base64 credentials with: `python3 -c "import base64; print(base64.b64encode(open('secrets/firebase-service-account.json','rb').read()).decode())"`
+- Store credentials in platform secret managers (AWS Secrets Manager, Azure Key Vault, etc.)
+- Ensure proper encoding and decoding throughout the deployment pipeline
 
-**Configuration Example:**
+**Configuration Examples:**
 ```bash
-# Cloud deployment with environment variable
+# Cloud deployment with base64 credentials (recommended)
+export FIREBASE_AUTH_ENABLED=true
+export FIREBASE_PROJECT_ID=your-project-id
+export FIREBASE_CREDENTIALS_B64=eyJ0eXBlIjoic2VydmljZV9hY2NvdW50Iiwi...
+
+# Alternative: raw JSON credentials
 export FIREBASE_AUTH_ENABLED=true
 export FIREBASE_PROJECT_ID=your-project-id
 export FIREBASE_CREDENTIALS_JSON='{"type":"service_account","project_id":"..."}'
@@ -325,14 +336,14 @@ export FIREBASE_SERVICE_ACCOUNT_PATH=/path/to/service-account.json
 ```
 
 **Graceful Degradation:**
-- If Firebase initialization fails, endpoints return 503 with clear error messages
-- Logging provides detailed information about configuration issues
+- If Firebase initialization fails at any priority level, endpoints return 503 with clear error messages
+- Logging provides detailed information about which priority level failed and why
 - Frontend can detect Firebase availability via `/auth/firebase/config` endpoint
 
 **Section sources**
-- [src/api/firebase_auth.py:43-133](file://src/api/firebase_auth.py#L43-L133)
-- [src/api/config.py:235-246](file://src/api/config.py#L235-L246)
-- [.env.example:134-143](file://.env.example#L134-L143)
+- [src/api/firebase_auth.py:45-150](file://src/api/firebase_auth.py#L45-L150)
+- [src/api/config.py:226-250](file://src/api/config.py#L226-L250)
+- [.env.example:138-154](file://.env.example#L138-L154)
 
 ### Local Development Setup
 - **Direct Execution**: Run the FastAPI application directly with uvicorn for development
@@ -545,9 +556,10 @@ Common issues and resolutions:
 - **Path resolution**: Confirm that the environment variable is properly set and loaded by the application
 
 **Firebase Authentication Issues:**
-- Invalid FIREBASE_CREDENTIALS_JSON: Ensure JSON is properly formatted and contains all required fields
-- File-based configuration: Verify FIREBASE_SERVICE_ACCOUNT_PATH points to valid service account file
-- Initialization failures: Check logs for detailed error messages about Firebase configuration
+- **Base64 credentials**: Ensure FIREBASE_CREDENTIALS_B64 contains properly base64-encoded service account JSON
+- **JSON credentials**: Verify FIREBASE_CREDENTIALS_JSON is valid JSON and contains all required fields
+- **File-based configuration**: Confirm FIREBASE_SERVICE_ACCOUNT_PATH points to a valid service account file
+- **Initialization failures**: Check logs for detailed error messages about which priority level failed
 
 **Application Issues:**
 - Missing fixtures: Ensure all required JSON files exist under fixtures/ directory
@@ -567,7 +579,7 @@ Common issues and resolutions:
 - [src/agents/supervisor_agent.py:318-339](file://src/agents/supervisor_agent.py#L318-L339)
 
 ## Conclusion
-CareBridge provides a robust, auditable, and scalable foundation for care coordination with comprehensive production deployment support. The enhanced containerization, health monitoring, configuration management, Firebase authentication capabilities, and configurable audit database location enable reliable operation in production environments while maintaining safety, auditability, and observability standards. By following this deployment guide—covering environment setup, containerization, cloud integration, scaling, monitoring, security, disaster recovery, and upgrades—you can operate the system reliably in production while maintaining safety and compliance.
+CareBridge provides a robust, auditable, and scalable foundation for care coordination with comprehensive production deployment support. The enhanced containerization, health monitoring, configuration management, Firebase authentication capabilities with base64 credential support, and configurable audit database location enable reliable operation in production environments while maintaining safety, auditability, and observability standards. By following this deployment guide—covering environment setup, containerization, cloud integration, scaling, monitoring, security, disaster recovery, and upgrades—you can operate the system reliably in production while maintaining safety and compliance.
 
 ## Appendices
 
@@ -618,12 +630,17 @@ docker run -d \
 
 **Firebase Cloud Deployment:**
 ```bash
-# Set Firebase credentials as environment variable
+# Recommended: Base64-encoded credentials for cloud platforms
+export FIREBASE_AUTH_ENABLED=true
+export FIREBASE_PROJECT_ID=your-project-id
+export FIREBASE_CREDENTIALS_B64=eyJ0eXBlIjoic2VydmljZV9hY2NvdW50Iiwi...
+
+# Alternative: Raw JSON credentials
 export FIREBASE_AUTH_ENABLED=true
 export FIREBASE_PROJECT_ID=your-project-id
 export FIREBASE_CREDENTIALS_JSON='{"type":"service_account","project_id":"..."}'
 
-# Or use file-based configuration
+# Traditional file-based deployment
 export FIREBASE_SERVICE_ACCOUNT_PATH=/path/to/service-account.json
 ```
 
@@ -644,5 +661,5 @@ export AUDIT_DB_PATH=$TMPDIR/audit.db
 - [Dockerfile:65-68](file://Dockerfile#L65-L68)
 - [requirements.txt:1-36](file://requirements.txt#L1-L36)
 - [src/api/routers/health.py:75-84](file://src/api/routers/health.py#L75-L84)
-- [.env.example:134-143](file://.env.example#L134-L143)
+- [.env.example:138-154](file://.env.example#L138-L154)
 - [.env.example:98-101](file://.env.example#L98-L101)

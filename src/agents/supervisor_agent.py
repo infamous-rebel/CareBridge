@@ -826,19 +826,31 @@ async def process_event(event: CareEvent) -> ResolutionResult:
     )
 
 
+_QUERY_SYSTEM_PROMPT = (
+    "You are the CareBridge Supervisor. Answer the caregiver's question using "
+    "ONLY the events provided. Be concise (2-4 sentences), warm, and factual. "
+    "Never diagnose or prescribe. Never invent events that are not in the list."
+)
+
+
 async def query_status(care_recipient_id: str, question: str) -> str:
     """Query the current care status for a recipient.
 
-    Routes the read-only status query through the Communication Agent's
-    synthesize_status tool (an AUTO-category action — deterministic, no
-    external API). Exactly one audit event records the query.
+    Fetches recent audit events via ``synthesize_status()``, then asks the
+    configured LLM to synthesise a natural-language answer to the caregiver's
+    question.  Falls back to the deterministic summary when the LLM is
+    unavailable or fails, so the endpoint never breaks (AGENTS.md §9 — degrade
+    loudly, never silently).
+
+    Exactly one audit event records the query.
 
     Args:
         care_recipient_id: The care recipient to query about.
         question: Natural language question about care status.
 
     Returns:
-        Synthesized status string.
+        Natural-language answer from the LLM, or the deterministic summary
+        as a fallback.
     """
     _ensure_audit_db()
 
@@ -856,6 +868,57 @@ async def query_status(care_recipient_id: str, question: str) -> str:
         outcome="success",
         correlation_id=str(uuid4()),
     )
+
+    # --- LLM synthesis -------------------------------------------------------
+    # Build a prompt from the deterministic data so the LLM can answer the
+    # caregiver's question in natural language.  Falls back to the raw summary
+    # when no model is configured or the call fails.
+    events_as_text = "\n".join(
+        f"- {evt.action_type} ({evt.outcome}) at {evt.timestamp}: {evt.rationale}"
+        for evt in summary.recent_events
+    ) or "No recent events."
+
+    state_summary = summary.summary_text
+    if summary.pending_actions:
+        state_summary += (
+            f" {len(summary.pending_actions)} pending action(s) awaiting resolution."
+        )
+
+    user_prompt = (
+        f"Question: {question}\n\n"
+        f"Recent events:\n{events_as_text}\n\n"
+        f"Current state: {state_summary}"
+    )
+
+    messages = [{"role": "user", "content": [{"text": user_prompt}]}]
+
+    try:
+        model = get_model()
+        response = model(messages, system_prompt=_QUERY_SYSTEM_PROMPT)
+        # Strands model responses expose .output.text; handle both shapes.
+        answer: str
+        if isinstance(response, str):
+            answer = response
+        else:
+            answer = str(getattr(response, "output", response))
+            if hasattr(response, "output") and hasattr(response.output, "text"):
+                answer = response.output.text
+        answer = answer.strip()
+        if answer:
+            logger.info(
+                "query_status: LLM synthesis succeeded (provider=%s)",
+                get_provider_name(),
+            )
+            return answer
+    except RuntimeError:
+        # No LLM configured — fall through to deterministic summary.
+        logger.info("query_status: LLM not available, using deterministic fallback")
+    except Exception as exc:
+        # LLM call failed at runtime — degrade loudly (AGENTS.md §9).
+        logger.warning(
+            "query_status: LLM synthesis failed (%s), using deterministic fallback",
+            exc,
+        )
 
     return summary.summary_text
 
