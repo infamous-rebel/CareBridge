@@ -236,6 +236,10 @@ class Settings(BaseSettings):
         default="secrets/firebase-service-account.json",
         validation_alias=AliasChoices("FIREBASE_SERVICE_ACCOUNT_PATH",),
     )
+    firebase_credentials_json: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("FIREBASE_CREDENTIALS_JSON",),
+    )
     firebase_auth_enabled: bool = Field(
         default=False,
         validation_alias=AliasChoices("FIREBASE_AUTH_ENABLED",),

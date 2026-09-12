@@ -82,17 +82,34 @@ def init_firebase() -> bool:
             except ValueError:
                 pass  # Not yet initialized; proceed.
 
-            sa_path = settings.firebase_service_account_path
-            if not os.path.exists(sa_path):
-                logger.warning(
-                    "Firebase service account not found at '%s'. "
-                    "Firebase endpoints will return 503 until the file is placed.",
-                    sa_path,
-                )
-                _init_failed = True
-                return False
+            # Priority 1: FIREBASE_CREDENTIALS_JSON env var (cloud deployment)
+            if settings.firebase_credentials_json:
+                import json
+                try:
+                    cred_dict = json.loads(settings.firebase_credentials_json)
+                    cred = credentials.Certificate(cred_dict)
+                    logger.info("Firebase Admin initialized from FIREBASE_CREDENTIALS_JSON env var")
+                except (json.JSONDecodeError, ValueError) as exc:
+                    logger.warning(
+                        "FIREBASE_CREDENTIALS_JSON is present but invalid: %s. "
+                        "Firebase endpoints will return 503.",
+                        exc,
+                    )
+                    _init_failed = True
+                    return False
+            else:
+                # Priority 2: FIREBASE_SERVICE_ACCOUNT_PATH file
+                sa_path = settings.firebase_service_account_path
+                if not os.path.exists(sa_path):
+                    logger.warning(
+                        "Firebase service account not found at '%s'. "
+                        "Firebase endpoints will return 503 until the file is placed.",
+                        sa_path,
+                    )
+                    _init_failed = True
+                    return False
 
-            cred = credentials.Certificate(sa_path)
+                cred = credentials.Certificate(sa_path)
             app_config = {}
             if settings.firebase_project_id:
                 app_config["projectId"] = settings.firebase_project_id
