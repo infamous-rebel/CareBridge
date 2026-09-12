@@ -1,1 +1,0 @@
-self.__NEXT_FONT_MANIFEST="{\"pages\":{},\"app\":{\"/Users/infamous2.0/Desktop/CareBridge/src/ui/app/layout\":[\"static/media/6ba5f591ae6c56f6-s.p.woff2\",\"static/media/af4bf8399d1aacdf-s.p.woff2\",\"static/media/e4af272ccee01ff0-s.p.woff2\",\"static/media/bb3ef058b751a6ad-s.p.woff2\"]},\"appUsingSizeAdjust\":true,\"pagesUsingSizeAdjust\":false}"
