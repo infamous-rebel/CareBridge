@@ -69,58 +69,57 @@ flowchart TB
         FM["Family Members<br/>SMS / Email"]
     end
 
-    subgraph Backend["FastAPI Backend (Railway)"]
-        SUP["Supervisor Agent<br/>LLM-driven routing"]
-        
-        subgraph Specialists["Specialized Agents (as tools)"]
-            MED["Medication Agent"]
-            APT["Appointment Agent"]
-            LOG["Logistics Agent"]
-            COM["Communication Agent"]
-        end
-        
-        AUDIT[("Audit Trail<br/>SQLite immutable")]
-        ESC["Escalation Logic<br/>Deterministic Python"]
-    end
-
-    subgraph MCP["MCP Integration Layer"]
-        PHAR["Pharmacy MCP<br/>in-process (mocked)"]
-        MSG["Messaging MCP<br/>in-process (mocked)"]
-        DEL["Delivery MCP<br/>in-process (mocked)"]
-        CAL["Calendar MCP<br/>in-process (mocked)"]
-    end
-
     subgraph Auth["Authentication"]
         FB["Firebase Auth<br/>Google sign-in"]
         JWT["Business-claim JWT<br/>FastAPI issued"]
     end
 
-    subgraph LLM["LLM Provider"]
-        PROVIDER["Gemini / Groq /<br/>Bedrock / Anthropic /<br/>OpenAI / Ollama"]
+    subgraph Backend["FastAPI Backend (Railway)"]
+        direction TB
+        SUP["Supervisor Agent<br/>LLM-driven routing"]
+
+        subgraph Specialists["Specialized Agents (agents-as-tools)"]
+            MED["Medication Agent"]
+            APT["Appointment Agent"]
+            LOG["Logistics Agent"]
+            COM["Communication Agent"]
+        end
+
+        AUDIT[("Immutable Audit Trail<br/>SQLite · blocks UPDATE/DELETE")]
+        ESC["Escalation Logic<br/>Deterministic Python"]
     end
 
-    CG -->|"Google sign-in"| FB
-    FB -->|"ID token"| JWT
-    CG -->|"JWT bearer"| Backend
-    FM -.->|"receive alerts"| MSG
+    subgraph LLM["LLM Provider (pluggable)"]
+        PROVIDER["Groq (current)<br/>Gemini · Bedrock · Anthropic<br/>OpenAI · Ollama · LiteLLM"]
+    end
 
+    subgraph MCP["MCP Servers (standalone — not yet wired to agents)"]
+        PHAR["Pharmacy MCP<br/>mocked"]
+        MSG["Messaging MCP<br/>mocked"]
+        DEL["Delivery MCP<br/>mocked"]
+        CAL["Calendar MCP<br/>mocked"]
+    end
+
+    CG -->|"1. Google sign-in"| FB
+    FB -->|"2. ID token"| JWT
+    CG -->|"3. JWT bearer"| Backend
+    FM -.->|"receives alerts"| MSG
+
+    SUP -->|"routes via LLM"| PROVIDER
     SUP --> MED
     SUP --> APT
     SUP --> LOG
     SUP --> COM
-    SUP --> PROVIDER
-
-    MED --> PHAR
-    APT --> CAL
-    LOG --> DEL
-    COM --> MSG
 
     SUP --> AUDIT
     MED --> AUDIT
     APT --> AUDIT
     LOG --> AUDIT
     COM --> AUDIT
+
     SUP --> ESC
+
+    Specialists -.->|"planned — not yet wired"| MCP
 ```
 
 The Supervisor wraps each specialist as a Strands agents-as-tools callable. The LLM reads the event and decides which specialist to invoke — no custom routing code. Every action writes to the immutable audit trail BEFORE execution. SQLite triggers prevent UPDATE/DELETE on audit events.
