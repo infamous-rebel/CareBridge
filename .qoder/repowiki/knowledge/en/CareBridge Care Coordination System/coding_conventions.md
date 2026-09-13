@@ -1,4 +1,0 @@
-- Every agent action must be classified by the deterministic Policy Engine before execution and recorded in the audit trail prior to running.
-- Cross-agent coordination is performed exclusively through the Supervisor Agent; specialized agents never call each other directly.
-- All external integrations are accessed via MCP servers (in-process SDK or SSE) rather than direct API calls from agents.
-- Shared state between agents is passed through Pydantic models (`CareEvent`, `ResolutionResult`) rather than raw dicts.

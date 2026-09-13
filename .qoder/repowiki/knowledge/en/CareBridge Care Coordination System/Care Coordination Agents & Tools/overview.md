@@ -1,1 +1,0 @@
-Orchestrates care events through a Supervisor agent that routes to specialized Medication, Appointment, Logistics, and Communication agents backed by fixture-driven tools with deterministic escalation and immutable audit logging.

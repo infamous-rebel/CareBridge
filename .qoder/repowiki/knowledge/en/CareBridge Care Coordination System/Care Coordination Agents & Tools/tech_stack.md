@@ -1,1 +1,0 @@
-Python asyncio agents orchestrated around Pydantic schemas (`src/models/schemas`); optional Strands SDK + Amazon Bedrock (`anthropic.claude-sonnet-4-20250514`) for LLM-based supervisor mode; fixture-backed tool implementations load JSON fixtures from `fixtures/`.

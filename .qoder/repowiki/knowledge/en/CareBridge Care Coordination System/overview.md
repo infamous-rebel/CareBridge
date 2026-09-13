@@ -1,1 +1,0 @@
-Root entry point that bootstraps the Strands-based care coordination system, initializes the immutable audit trail, loads fixtures, and runs a deterministic demo scenario across specialized agents.

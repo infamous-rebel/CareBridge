@@ -1,1 +1,0 @@
-Call `init_audit_db(db_path)` before any audit writes to create the `audit_events` table and immutability triggers; the default database file is `audit.db` in the working directory and can be overridden per call via the `db_path` argument.

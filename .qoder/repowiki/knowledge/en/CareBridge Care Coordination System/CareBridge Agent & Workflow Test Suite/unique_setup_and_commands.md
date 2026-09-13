@@ -1,1 +1,0 @@
-Tests require the `temp_audit_db` pytest fixture (provided by a conftest not shown here) which initializes a temporary SQLite database for each test so audit events do not leak between runs.

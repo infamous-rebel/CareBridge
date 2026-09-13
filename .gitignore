@@ -47,3 +47,4 @@ secrets/
 
 # Next.js build cache
 src/ui/.next/
+.qoder/
