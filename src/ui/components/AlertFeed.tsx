@@ -2,13 +2,20 @@
 
 import React from "react";
 import type { AuditEvent } from "@/lib/api";
-import { cn } from "@/lib/utils";
 import {
-  AlertTriangle,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  Info,
+  Bell,
+  Pill,
+  PackageCheck,
+  Activity,
+  CalendarCheck,
+  PackageOpen,
+  FileText,
+  LogIn,
+  UserPlus,
+  Settings,
+  CalendarPlus,
+  GitBranch,
+  type LucideIcon,
 } from "lucide-react";
 
 interface AlertFeedProps {
@@ -17,20 +24,42 @@ interface AlertFeedProps {
   loading?: boolean;
 }
 
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  send_alert: AlertTriangle,
-  send_sms: AlertCircle,
-  send_email: Info,
-  order_refill: CheckCircle,
-  schedule_appointment: Clock,
-  check_refill_status: Info,
-};
+function actionTypeToDisplay(
+  action_type: string
+): { title: string; icon: LucideIcon; color: string } {
+  const mappings: Record<
+    string,
+    { title: string; icon: LucideIcon; color: string }
+  > = {
+    send_alert: { title: "Alert sent to family", icon: Bell, color: "terracotta" },
+    check_refill_status: { title: "Refill status checked", icon: Pill, color: "mint" },
+    order_refill: { title: "Refill ordered", icon: PackageCheck, color: "mint" },
+    detect_adherence_pattern: { title: "Adherence pattern checked", icon: Activity, color: "mint" },
+    schedule_appointment: { title: "Appointment scheduled", icon: CalendarCheck, color: "mint" },
+    check_delivery_status: { title: "Delivery status checked", icon: PackageOpen, color: "mint" },
+    synthesize_status: { title: "Daily status summary", icon: FileText, color: "mint" },
+    login_firebase: { title: "Caregiver signed in", icon: LogIn, color: "muted" },
+    onboard_new_user: { title: "Caregiver onboarding complete", icon: UserPlus, color: "muted" },
+    update_settings: { title: "Settings updated", icon: Settings, color: "muted" },
+    create_medication: { title: "Medication added", icon: Pill, color: "mint" },
+    create_appointment: { title: "Appointment added", icon: CalendarPlus, color: "mint" },
+    process_event: { title: "Supervisor routed event", icon: GitBranch, color: "forest" },
+  };
 
-const OUTCOME_STYLES: Record<string, string> = {
-  success: "bg-green-50 text-green-700",
-  failure: "bg-red-50 text-red-700",
-  pending: "bg-amber-50 text-amber-700",
-  escalated: "bg-orange-50 text-orange-700",
+  return (
+    mappings[action_type] ?? {
+      title: action_type.replace(/_/g, " "),
+      icon: Activity,
+      color: "muted",
+    }
+  );
+}
+
+const COLOR_CLASSES: Record<string, string> = {
+  terracotta: "bg-rose-100 text-rose-600",
+  mint: "bg-mint-light text-forest",
+  forest: "bg-emerald-100 text-emerald-700",
+  muted: "bg-sand text-muted",
 };
 
 function timeAgo(timestamp: string): string {
@@ -66,7 +95,9 @@ export default function AlertFeed({ events, onAck, loading }: AlertFeedProps) {
   return (
     <ul className="space-y-3" aria-label="Alert feed">
       {events.map((event) => {
-        const Icon = ICON_MAP[event.action_type] ?? Info;
+        const display = actionTypeToDisplay(event.action_type);
+        const Icon = display.icon;
+        const colorClass = COLOR_CLASSES[display.color] ?? COLOR_CLASSES.muted;
         return (
           <li
             key={event.event_id}
@@ -74,17 +105,14 @@ export default function AlertFeed({ events, onAck, loading }: AlertFeedProps) {
           >
             <div className="flex items-start gap-3">
               <div
-                className={cn(
-                  "flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg",
-                  OUTCOME_STYLES[event.outcome] ?? "bg-stone-100 text-stone-600",
-                )}
+                className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${colorClass}`}
               >
                 <Icon className="h-4 w-4" aria-hidden="true" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <p className="truncate text-sm font-medium text-stone-900">
-                    {event.action_type.replace(/_/g, " ")}
+                    {display.title}
                   </p>
                   <time className="flex-shrink-0 text-xs text-muted" dateTime={event.timestamp}>
                     {timeAgo(event.timestamp)}

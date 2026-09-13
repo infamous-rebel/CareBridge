@@ -22,6 +22,17 @@ import {
   X,
   AlertCircle,
   Bot,
+  Bell,
+  PackageCheck,
+  Activity,
+  CalendarCheck,
+  PackageOpen,
+  FileText,
+  LogIn,
+  UserPlus,
+  Settings,
+  GitBranch,
+  type LucideIcon,
 } from "lucide-react";
 
 const CARE_RECIPIENT_ID = "cr-001";
@@ -39,13 +50,42 @@ function timeAgo(ts: string): string {
   return `${days}d ago`;
 }
 
-const ACTIVITY_ICON: Record<string, string> = {
-  order_refill: "fa-pills",
-  schedule_appointment: "fa-stethoscope",
-  check_refill_status: "fa-pills",
-  send_alert: "fa-bell",
-  send_sms: "fa-envelope",
-  send_email: "fa-envelope",
+function actionTypeToDisplay(
+  action_type: string
+): { title: string; icon: LucideIcon; color: string } {
+  const mappings: Record<
+    string,
+    { title: string; icon: LucideIcon; color: string }
+  > = {
+    send_alert: { title: "Alert sent to family", icon: Bell, color: "terracotta" },
+    check_refill_status: { title: "Refill status checked", icon: Pill, color: "mint" },
+    order_refill: { title: "Refill ordered", icon: PackageCheck, color: "mint" },
+    detect_adherence_pattern: { title: "Adherence pattern checked", icon: Activity, color: "mint" },
+    schedule_appointment: { title: "Appointment scheduled", icon: CalendarCheck, color: "mint" },
+    check_delivery_status: { title: "Delivery status checked", icon: PackageOpen, color: "mint" },
+    synthesize_status: { title: "Daily status summary", icon: FileText, color: "mint" },
+    login_firebase: { title: "Caregiver signed in", icon: LogIn, color: "muted" },
+    onboard_new_user: { title: "Caregiver onboarding complete", icon: UserPlus, color: "muted" },
+    update_settings: { title: "Settings updated", icon: Settings, color: "muted" },
+    create_medication: { title: "Medication added", icon: Pill, color: "mint" },
+    create_appointment: { title: "Appointment added", icon: CalendarPlus, color: "mint" },
+    process_event: { title: "Supervisor routed event", icon: GitBranch, color: "forest" },
+  };
+
+  return (
+    mappings[action_type] ?? {
+      title: action_type.replace(/_/g, " "),
+      icon: Activity,
+      color: "muted",
+    }
+  );
+}
+
+const COLOR_CLASSES: Record<string, string> = {
+  terracotta: "bg-rose-100 text-rose-600",
+  mint: "bg-mint-light text-forest",
+  forest: "bg-emerald-100 text-emerald-700",
+  muted: "bg-sand text-muted",
 };
 
 
@@ -281,33 +321,35 @@ export default function DashboardOverview() {
               <EmptyState title="No recent activity" description="Everything looks calm." />
             ) : (
               <div className="space-y-4">
-                {alerts.slice(0, 8).map((event) => (
-                  <div
-                    key={event.event_id}
-                    className="flex items-start space-x-4 border-b border-sand pb-4 last:border-0 last:pb-0"
-                  >
-                    <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-mint-light text-forest text-sm">
-                      {ACTIVITY_ICON[event.action_type] ? (
-                        <i className={`fa-solid ${ACTIVITY_ICON[event.action_type]}`} />
-                      ) : (
-                        <Zap className="h-4 w-4" />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-semibold text-charcoal">
-                          {event.action_type.replace(/_/g, " ")}
-                        </h4>
-                        <span className="font-mono text-xs text-muted">
-                          {timeAgo(event.timestamp)}
-                        </span>
+                {alerts.slice(0, 8).map((event) => {
+                  const display = actionTypeToDisplay(event.action_type);
+                  const Icon = display.icon;
+                  const colorClass = COLOR_CLASSES[display.color] ?? COLOR_CLASSES.muted;
+
+                  return (
+                    <div
+                      key={event.event_id}
+                      className="flex items-start space-x-4 border-b border-sand pb-4 last:border-0 last:pb-0"
+                    >
+                      <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm ${colorClass}`}>
+                        <Icon className="h-4 w-4" />
                       </div>
-                      <p className="mt-0.5 truncate text-xs text-muted">
-                        {event.rationale}
-                      </p>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-sm font-semibold text-charcoal">
+                            {display.title}
+                          </h4>
+                          <span className="font-mono text-xs text-muted">
+                            {timeAgo(event.timestamp)}
+                          </span>
+                        </div>
+                        <p className="mt-0.5 truncate text-xs text-muted">
+                          {event.rationale}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
