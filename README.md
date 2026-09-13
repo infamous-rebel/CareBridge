@@ -134,11 +134,11 @@ The Supervisor wraps each specialist as a Strands agents-as-tools callable. The 
 | **Agent Framework** | Strands Agents SDK (Python) | Agents-as-tools pattern |
 | **Backend** | FastAPI + Uvicorn | REST API, JWT auth, rate limiting |
 | **Frontend** | Next.js 15, React 19, Tailwind CSS 4 | App Router, TanStack Query |
-| **LLM** | Provider-agnostic | Gemini (default), Groq, Bedrock, Anthropic, OpenAI, Ollama, LiteLLM |
-| **MCP** | Qoder Agent SDK | In-process servers for pharmacy, messaging, delivery, calendar |
+| **LLM** | Provider-agnostic | Groq (current deployment), Gemini, Bedrock, Anthropic, OpenAI, Ollama, LiteLLM |
+| **MCP** | Qoder Agent SDK | Standalone servers for pharmacy, messaging, delivery, calendar. Strands Supervisor uses direct tools; native MCP integration is on the roadmap. |
 | **Auth** | Firebase Auth + FastAPI JWT | Google sign-in → Firebase ID token → business-claim JWT |
 | **Storage (dev)** | SQLite | audit.db (immutable), auth.db (users) |
-| **Storage (prod)** | PostgreSQL-ready | Swap via DATABASE_URL |
+| **Storage (prod)** | SQLite (current) | PostgreSQL migration path documented in docs/PRODUCTION-UPGRADE.md |
 | **Deployment** | Railway (backend) + Vercel (frontend) | Docker image for backend |
 | **Testing** | pytest + pytest-asyncio | 177 tests |
 
@@ -152,7 +152,9 @@ The Supervisor wraps each specialist as a Strands agents-as-tools callable. The 
 4. **Dashboard calls** `/query` or `/care-recipients/me/*` endpoints with the JWT bearer token.
 5. **Supervisor Agent** receives the care event and reads it with the configured LLM.
 6. **LLM routes** to the correct specialist agent (Medication, Appointment, Logistics, or Communication) — the model decides, not conditional code.
-7. **Specialist executes** its tools (via MCP), writes "before action" audit events, then executes.
+7. **Specialist executes** its tools (direct Python tool functions; MCP servers 
+   exist standalone but are not yet wired into the Strands runtime), writes 
+   'before action' audit events.
 8. **Response returns** to the caregiver with the synthesized result.
 9. **Every step** is logged to the immutable audit trail — before and after execution, with rationale, outcome, and correlation ID.
 
@@ -164,7 +166,7 @@ If the LLM is unavailable, the Supervisor degrades to deterministic fallback rou
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/your-org/carebridge.git
+git clone https://github.com/infamous-rebel/CareBridge.git
 cd carebridge
 
 # 2. Create a Python 3.11+ virtual environment
@@ -177,7 +179,7 @@ pip install -r requirements.txt
 # 4. Configure environment
 cp .env.example .env
 # Edit .env: set LLM_PROVIDER and the corresponding API key
-# Default: Gemini free tier (no credit card required)
+# Free options: Gemini (rate-limited) or Groq (recommended)
 
 # 5. Run the demo scenario
 python main.py
@@ -275,7 +277,7 @@ CareBridge is **provider-agnostic**. One environment variable (`LLM_PROVIDER`) s
 
 | Provider | Env Var | Model Var | Notes |
 |---|---|---|---|
-| **Google Gemini** | `GEMINI_API_KEY` | `GEMINI_MODEL` | Default. Free tier available. |
+| **Google Gemini** | `GEMINI_API_KEY` | `GEMINI_MODEL` | Free tier available (rate-limited). |
 | **Groq** | `GROQ_API_KEY` | `GROQ_MODEL` | Fast, free tier. OpenAI-compatible. |
 | **Amazon Bedrock** | AWS credentials | `BEDROCK_MODEL_ID` | No API key; uses boto3. |
 | **Anthropic** | `ANTHROPIC_API_KEY` | `ANTHROPIC_MODEL` | Direct API. |
@@ -359,7 +361,7 @@ Full details: [docs/API.md](docs/API.md)
 | **Pharmacy** | In-process SDK | `check_refill_status`, `order_refill`, `get_medication_schedule` | **Mocked** — JSON fixtures, 10% simulated timeout on `order_refill` |
 | **Messaging** | In-process SDK | `send_sms`, `send_email` | **Mocked** — logs to `logs/messages.log`, returns synthetic receipts |
 | **Delivery** | In-process SDK | `check_delivery_status`, `order_grocery`, `order_pharmacy_delivery` | **Mocked** — JSON fixtures, 15% simulated failure rate |
-| **Calendar** | In-process SDK | `get_calendar`, `schedule_appointment` | **Mocked** — JSON fixtures (SSE swap is Day-2) |
+| **Calendar** | In-process SDK | `get_calendar`, `schedule_appointment` | **Mocked** — JSON fixtures |
 
 All four servers run in-process using the Qoder Agent SDK. Each tool call writes exactly one audit event. Mock data comes from `fixtures/*.json`.
 
