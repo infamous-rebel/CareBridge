@@ -236,7 +236,7 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full runbook with all 18 ba
 
 | Variable | Purpose | Required |
 |---|---|---|
-| `LLM_PROVIDER` | LLM provider: `gemini`, `groq`, `bedrock`, `anthropic`, `openai`, `ollama`, `litellm` | Yes (default: `gemini`) |
+| `LLM_PROVIDER` | LLM provider: `gemini`, `groq`, `bedrock`, `anthropic`, `openai`, `ollama`, `litellm` | Yes (default: `groq`) |
 | `GEMINI_API_KEY` | Google Gemini API key | When provider=gemini |
 | `GROQ_API_KEY` | Groq API key | When provider=groq |
 | `ANTHROPIC_API_KEY` | Anthropic API key | When provider=anthropic |
@@ -362,7 +362,7 @@ Full details: [docs/API.md](docs/API.md)
 | **Delivery** | In-process SDK | `check_delivery_status`, `order_grocery`, `order_pharmacy_delivery` | **Mocked** — JSON fixtures, 15% simulated failure rate |
 | **Calendar** | In-process SDK | `get_calendar`, `schedule_appointment` | **Mocked** — JSON fixtures |
 
-All four servers run in-process using the Qoder Agent SDK. Each tool call writes exactly one audit event. Mock data comes from `fixtures/*.json`.
+The four servers are standalone in-process MCP modules built with the Qoder Agent SDK. They register their tools and pass the existing test suite, but the Strands Supervisor currently calls the underlying Python tool functions directly — native MCP wiring into the Strands runtime is on the roadmap. All audit writes happen inside the tool functions. Mock data comes from `fixtures/*.json`.
 
 See [docs/PRODUCTION-UPGRADE.md](docs/PRODUCTION-UPGRADE.md) for the path to real integrations.
 
