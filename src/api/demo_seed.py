@@ -16,44 +16,36 @@ from src.models.audit_log import DB_PATH
 logger = logging.getLogger(__name__)
 
 # ── Realistic event catalogue ────────────────────────────────────────────────
-# Each tuple: (day_offset, hour_offset, actor, action_type, rationale, outcome)
+# Each tuple: (day_offset, actor, action_type, rationale, outcome)
 # day_offset is relative to "now" (0 = today, negative = days ago).
-# hour_offset fine-tunes ordering within the same day (most recent first).
 
-_SEED_EVENTS: list[tuple[int, int, str, str, str, str]] = [
-    # Day 0 — today (most recent first)
-    (0,   0, "medication",  "order_refill",
-     "Metformin refill placed at CVS #4192", "success"),
-    (0,  -1, "medication",  "check_refill_status",
-     "Lisinopril — 8 days remaining", "success"),
-    (0,  -2, "supervisor",  "synthesize_status",
-     "Daily status summary — all systems nominal", "success"),
-    (0,  -3, "human",       "login_firebase",
-     "Caregiver signed in via Google", "success"),
-    # Day -1
-    (-1,  0, "appointment", "schedule_appointment",
-     "Endocrinology follow-up scheduled for Wed 8:30 PM", "success"),
-    (-1, -1, "logistics",   "check_delivery_status",
-     "Atorvastatin delivery in transit — ETA tomorrow", "success"),
-    (-1, -2, "communication", "send_alert",
-     "Refill confirmed — ETA tomorrow", "success"),
-    # Day -2
-    (-2,  0, "medication",  "detect_adherence_pattern",
-     "Evening dose taken 1 hour late — mild deviation", "success"),
-    (-2, -1, "communication", "send_alert",
-     "Vitals: BP 138/88, mild elevation", "escalated"),
-    # Day -3
-    (-3,  0, "supervisor",  "synthesize_status",
-     "Daily status summary generated", "success"),
-    # Day -4
-    (-4,  0, "logistics",   "check_delivery_status",
-     "Refill in transit — expected delivery tomorrow", "success"),
-    # Day -5
-    (-5,  0, "medication",  "check_refill_status",
-     "Lisinopril refill check — days_remaining=8", "success"),
-    # Day -6
-    (-6,  0, "communication", "send_alert",
+_SEED_EVENTS: list[tuple[int, str, str, str, str]] = [
+    (-6, "communication", "send_alert",
      "Daily digest delivered", "success"),
+    (-5, "medication", "check_refill_status",
+     "Lisinopril refill check — days_remaining=8", "success"),
+    (-5, "appointment", "schedule_appointment",
+     "Cardiology follow-up scheduled", "success"),
+    (-4, "medication", "order_refill",
+     "Metformin refill placed at CVS #4192", "success"),
+    (-4, "logistics", "check_delivery_status",
+     "Refill in transit — expected delivery tomorrow", "success"),
+    (-3, "medication", "detect_adherence_pattern",
+     "Evening dose taken 1h late — mild deviation", "success"),
+    (-3, "supervisor", "synthesize_status",
+     "Daily status summary generated", "success"),
+    (-2, "communication", "send_alert",
+     "Vitals: BP 138/88, mild elevation detected", "escalated"),
+    (-2, "appointment", "schedule_appointment",
+     "Endocrinology appointment scheduled Wed 8:30 PM", "success"),
+    (-1, "medication", "check_refill_status",
+     "Atorvastatin refill check — days_remaining=4", "success"),
+    (-1, "medication", "order_refill",
+     "Atorvastatin refill placed at CVS #4192", "success"),
+    (-1, "communication", "send_alert",
+     "Refill confirmed, ETA tomorrow", "success"),
+    (0, "supervisor", "synthesize_status",
+     "All systems nominal", "success"),
 ]
 
 # Pending approval events (outcome='pending')
@@ -153,8 +145,8 @@ def seed_demo_audit_events(db_path: str | None = None) -> None:
     now = datetime.now(timezone.utc)
     correlation_root = str(uuid4())
 
-    for day_offset, hour_offset, actor, action_type, rationale, outcome in _SEED_EVENTS:
-        ts = (now + timedelta(days=day_offset, hours=hour_offset)).isoformat()
+    for day_offset, actor, action_type, rationale, outcome in _SEED_EVENTS:
+        ts = (now + timedelta(days=day_offset)).isoformat()
         _insert_event(
             resolved_db,
             actor=actor,
@@ -166,8 +158,6 @@ def seed_demo_audit_events(db_path: str | None = None) -> None:
         )
 
     # ── Pending approval events ──────────────────────────────────────────
-    # Timestamped at Day -1 so Day 0 seed events remain the most recent.
-    pending_ts = (now - timedelta(days=1)).isoformat()
     for actor, action_type, rationale in _PENDING_APPROVALS:
         _insert_event(
             resolved_db,
@@ -175,7 +165,7 @@ def seed_demo_audit_events(db_path: str | None = None) -> None:
             action_type=action_type,
             rationale=rationale,
             outcome="pending",
-            timestamp=pending_ts,
+            timestamp=now.isoformat(),
             correlation_id=correlation_root,
         )
 
@@ -186,7 +176,7 @@ def seed_demo_audit_events(db_path: str | None = None) -> None:
         action_type="demo_seed_complete",
         rationale="Demo audit trail seeded",
         outcome="success",
-        timestamp=pending_ts,
+        timestamp=now.isoformat(),
         correlation_id=correlation_root,
     )
 
