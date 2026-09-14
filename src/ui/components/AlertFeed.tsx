@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { motion } from "framer-motion";
 import type { AuditEvent } from "@/lib/api";
 import {
   Bell,
@@ -26,40 +27,45 @@ interface AlertFeedProps {
 
 function actionTypeToDisplay(
   action_type: string
-): { title: string; icon: LucideIcon; color: string } {
+): { title: string; icon: LucideIcon; category: string } {
   const mappings: Record<
     string,
-    { title: string; icon: LucideIcon; color: string }
+    { title: string; icon: LucideIcon; category: string }
   > = {
-    send_alert: { title: "Alert sent to family", icon: Bell, color: "terracotta" },
-    check_refill_status: { title: "Refill status checked", icon: Pill, color: "mint" },
-    order_refill: { title: "Refill ordered", icon: PackageCheck, color: "mint" },
-    detect_adherence_pattern: { title: "Adherence pattern checked", icon: Activity, color: "mint" },
-    schedule_appointment: { title: "Appointment scheduled", icon: CalendarCheck, color: "mint" },
-    check_delivery_status: { title: "Delivery status checked", icon: PackageOpen, color: "mint" },
-    synthesize_status: { title: "Daily status summary", icon: FileText, color: "mint" },
-    login_firebase: { title: "Caregiver signed in", icon: LogIn, color: "muted" },
-    onboard_new_user: { title: "Caregiver onboarding complete", icon: UserPlus, color: "muted" },
-    update_settings: { title: "Settings updated", icon: Settings, color: "muted" },
-    create_medication: { title: "Medication added", icon: Pill, color: "mint" },
-    create_appointment: { title: "Appointment added", icon: CalendarPlus, color: "mint" },
-    process_event: { title: "Supervisor routed event", icon: GitBranch, color: "forest" },
+    send_alert:              { title: "Alert sent to family",         icon: Bell,        category: "alert" },
+    check_refill_status:     { title: "Refill status checked",        icon: Pill,        category: "medication" },
+    order_refill:            { title: "Refill ordered",               icon: PackageCheck, category: "medication" },
+    detect_adherence_pattern:{ title: "Adherence pattern checked",    icon: Activity,    category: "medication" },
+    create_medication:       { title: "Medication added",             icon: Pill,        category: "medication" },
+    schedule_appointment:    { title: "Appointment scheduled",        icon: CalendarCheck, category: "appointment" },
+    create_appointment:      { title: "Appointment added",            icon: CalendarPlus, category: "appointment" },
+    check_delivery_status:   { title: "Delivery status checked",      icon: PackageOpen, category: "logistics" },
+    order_grocery:           { title: "Grocery order placed",         icon: PackageOpen, category: "logistics" },
+    order_pharmacy_delivery: { title: "Pharmacy delivery ordered",    icon: PackageOpen, category: "logistics" },
+    synthesize_status:       { title: "Daily status summary",         icon: FileText,    category: "supervisor" },
+    process_event:           { title: "Supervisor routed event",      icon: GitBranch,   category: "supervisor" },
+    login_firebase:          { title: "Caregiver signed in",          icon: LogIn,       category: "human" },
+    onboard_new_user:        { title: "Caregiver onboarding complete", icon: UserPlus,   category: "human" },
+    update_settings:         { title: "Settings updated",             icon: Settings,    category: "human" },
   };
 
   return (
     mappings[action_type] ?? {
       title: action_type.replace(/_/g, " "),
       icon: Activity,
-      color: "muted",
+      category: "default",
     }
   );
 }
 
-const COLOR_CLASSES: Record<string, string> = {
-  terracotta: "bg-rose-100 text-rose-600",
-  mint: "bg-mint-light text-forest",
-  forest: "bg-emerald-100 text-emerald-700",
-  muted: "bg-sand text-muted",
+const CATEGORY_CLASSES: Record<string, string> = {
+  alert:      "bg-terracotta/10 text-terracotta",
+  medication: "bg-mint-light text-forest",
+  appointment:"bg-sand-light text-forest",
+  logistics:  "bg-sand text-forest",
+  supervisor: "bg-forest/10 text-forest",
+  human:      "bg-stone-200 text-stone-600",
+  default:    "bg-mint-light text-forest",
 };
 
 function timeAgo(timestamp: string): string {
@@ -97,18 +103,21 @@ export default function AlertFeed({ events, onAck, loading }: AlertFeedProps) {
       {events.map((event) => {
         const display = actionTypeToDisplay(event.action_type);
         const Icon = display.icon;
-        const colorClass = COLOR_CLASSES[display.color] ?? COLOR_CLASSES.muted;
+        const colorClass = CATEGORY_CLASSES[display.category] ?? CATEGORY_CLASSES.default;
         return (
           <li
             key={event.event_id}
             className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm"
           >
             <div className="flex items-start gap-3">
-              <div
+              <motion.div
                 className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg ${colorClass}`}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               >
                 <Icon className="h-4 w-4" aria-hidden="true" />
-              </div>
+              </motion.div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <p className="truncate text-sm font-medium text-stone-900">
