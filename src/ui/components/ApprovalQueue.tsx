@@ -2,7 +2,7 @@
 
 import React from "react";
 import type { PendingAction } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, cleanRationale } from "@/lib/utils";
 import { Check, X, Clock } from "lucide-react";
 
 interface ApprovalQueueProps {
@@ -56,7 +56,7 @@ export default function ApprovalQueue({
               <p className="text-sm font-medium text-stone-900">
                 {action.action_type.replace(/_/g, " ")}
               </p>
-              <p className="mt-0.5 text-xs text-muted">{action.rationale}</p>
+              <p className="mt-0.5 text-xs text-muted">{cleanRationale(action.rationale)}</p>
               <time className="mt-1 block text-xs text-muted" dateTime={action.requested_at}>
                 Requested {new Date(action.requested_at).toLocaleString()}
               </time>

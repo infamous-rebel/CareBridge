@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { cleanRationale } from "@/lib/utils";
 import { useToast } from "@/components/Toast";
 import LoadingShimmer from "@/components/LoadingShimmer";
 import ErrorState from "@/components/ErrorState";
@@ -344,7 +345,7 @@ export default function DashboardOverview() {
                           </span>
                         </div>
                         <p className="mt-0.5 truncate text-xs text-muted">
-                          {event.rationale}
+                          {cleanRationale(event.rationale)}
                         </p>
                       </div>
                     </div>
@@ -388,7 +389,7 @@ export default function DashboardOverview() {
                         {action.action_type.replace(/_/g, " ")}
                       </div>
                       <p className="text-sm font-medium text-charcoal">
-                        {action.rationale}
+                        {cleanRationale(action.rationale)}
                       </p>
                       <div className="text-[11px] text-muted">
                         Supervisor agent verified. Ready for approval.

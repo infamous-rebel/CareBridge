@@ -8,14 +8,48 @@ import ErrorState from "@/components/ErrorState";
 import { useToast } from "@/components/Toast";
 import { Bell, Mail, Smartphone, Clock, Globe } from "lucide-react";
 
-const TIMEZONES = [
-  { value: "America/New_York", label: "Eastern (ET)" },
-  { value: "America/Chicago", label: "Central (CT)" },
-  { value: "America/Denver", label: "Mountain (MT)" },
-  { value: "America/Los_Angeles", label: "Pacific (PT)" },
-  { value: "America/Anchorage", label: "Alaska (AKT)" },
-  { value: "Pacific/Honolulu", label: "Hawaii (HST)" },
+const TZ_IDS = [
+  "UTC",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "America/Sao_Paulo",
+  "America/Mexico_City",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Berlin",
+  "Europe/Moscow",
+  "Asia/Dhaka",
+  "Asia/Kolkata",
+  "Asia/Dubai",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Asia/Shanghai",
+  "Australia/Sydney",
+  "Pacific/Auckland",
 ];
+
+function getTzOffset(tz: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat("en", {
+      timeZone: tz,
+      timeZoneName: "shortOffset",
+    })
+      .formatToParts(new Date())
+      .find((p) => p.type === "timeZoneName");
+    return parts?.value ?? "GMT";
+  } catch {
+    return "GMT";
+  }
+}
+
+function buildTimezones() {
+  return TZ_IDS.map((tz) => ({
+    value: tz,
+    label: `${tz} (${getTzOffset(tz)})`,
+  }));
+}
 
 const LANGUAGES = [
   { value: "en", label: "English" },
@@ -39,7 +73,7 @@ export default function SettingsPage() {
   const [digest, setDigest] = useState(true);
   const [quietStart, setQuietStart] = useState("22:00");
   const [quietEnd, setQuietEnd] = useState("07:00");
-  const [timezone, setTimezone] = useState("America/New_York");
+  const [timezone, setTimezone] = useState("UTC");
   const [language, setLanguage] = useState("en");
 
   /* hydrate from API once loaded */
@@ -51,8 +85,17 @@ export default function SettingsPage() {
       setDigest(prefs.daily_digest ?? true);
       setQuietStart(settings.quiet_hours_start ?? "22:00");
       setQuietEnd(settings.quiet_hours_end ?? "07:00");
-      setTimezone(settings.timezone ?? "America/New_York");
       setLanguage(settings.language ?? "en");
+
+      /* Auto-detect browser timezone when backend returns the default 'UTC'
+         and the user has never saved a preference. */
+      const savedTz = settings.timezone;
+      if (savedTz && savedTz !== "UTC") {
+        setTimezone(savedTz);
+      } else {
+        const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        setTimezone(TZ_IDS.includes(detected) ? detected : "UTC");
+      }
     }
   }, [settings]);
 
@@ -170,7 +213,7 @@ export default function SettingsPage() {
                 onChange={(e) => setTimezone(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-sand bg-white px-3 py-2 text-sm text-charcoal focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
               >
-                {TIMEZONES.map((tz) => (
+                {buildTimezones().map((tz) => (
                   <option key={tz.value} value={tz.value}>{tz.label}</option>
                 ))}
               </select>

@@ -4,6 +4,13 @@ import React, { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { api, type AppointmentOut } from "@/lib/api";
 
+/** Convert a UTC ISO string to a local datetime-local input value. */
+function toLocalDatetimeInput(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 interface AppointmentModalProps {
   open: boolean;
   appointment?: AppointmentOut | null;
@@ -43,7 +50,7 @@ export default function AppointmentModal({
       setForm({
         provider_name: appointment.provider_name,
         specialty: appointment.specialty ?? "",
-        appointment_at: appointment.appointment_at,
+        appointment_at: toLocalDatetimeInput(appointment.appointment_at),
         location: appointment.location ?? "",
         prep_required: appointment.prep_required ?? [],
         transportation_needed: appointment.transportation_needed,
@@ -72,6 +79,7 @@ export default function AppointmentModal({
     try {
       const payload = {
         ...form,
+        appointment_at: new Date(form.appointment_at).toISOString(),
         specialty: form.specialty || undefined,
         location: form.location || undefined,
         notes: form.notes || undefined,
@@ -145,9 +153,9 @@ export default function AppointmentModal({
               <input
                 type="datetime-local"
                 required
-                value={form.appointment_at.slice(0, 16)}
+                value={form.appointment_at}
                 onChange={(e) =>
-                  setForm({ ...form, appointment_at: new Date(e.target.value).toISOString() })
+                  setForm({ ...form, appointment_at: e.target.value })
                 }
                 className="mt-1 w-full rounded-lg border border-sand bg-white px-4 py-2 text-sm text-charcoal focus:border-forest focus:outline-none focus:ring-2 focus:ring-forest/20"
               />
